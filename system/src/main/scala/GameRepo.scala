@@ -3,16 +3,14 @@ package lila.system
 import model._
 import DbGame._
 
-import com.novus.salat._
-import com.novus.salat.global._
-import com.novus.salat.dao._
 import com.mongodb.casbah.MongoCollection
 import com.mongodb.casbah.Imports._
 
-class GameRepo(collection: MongoCollection) extends SalatDAO[DbGame, String](collection) {
+class GameRepo(collection: MongoCollection) {
 
   def game(gameId: String): Option[DbGame] =
-    if (gameId.size == gameIdSize) findOneByID(gameId)
+    if (gameId.size == gameIdSize)
+      collection findOneByID gameId flatMap GameMapper.asObject
     else None
 
   def player(fullId: String): Option[(DbGame, DbPlayer)] = for {
@@ -25,9 +23,9 @@ class GameRepo(collection: MongoCollection) extends SalatDAO[DbGame, String](col
     player ← game playerByColor color
   } yield (game, player)
 
-  override def save(game: DbGame) {
-    update(DBObject("_id" -> game.id), _grater asDBObject game, false, false)
+  def save(game: DbGame) {
+    //update(DBObject("_id" -> game.id), _grater asDBObject game, false, false)
   }
 
-  def anyGame = findOne(DBObject())
+  //def anyGame = findOne(DBObject())
 }
