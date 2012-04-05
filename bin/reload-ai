@@ -6,7 +6,7 @@ require_once __DIR__.'/base_script.php';
 $port = "9071";
 $testurl="http://188.165.194.171:$port/ai";
 $play = "/home/thib/play-2.0-lila/play";
-$javaOptions = "-Dai.server=true -Dhttp.port=$port"
+$javaOptions = "-Dai.server=true -Dhttp.port=$port";
 
 show_run("Stage", "$play compile stage");
 show_run_catch("Stop", "$play stop");
