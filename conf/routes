@@ -25,9 +25,6 @@ GET   /logout                        controllers.Auth.logout
 GET   /@/:username                   controllers.User.show(username: String)
 GET   /signup                        controllers.User.signUp
 
-# Wiki
-GET   /wiki                          controllers.Wiki.home
-
 # App Public API
 GET   /socket                        controllers.App.socket
 GET   /socket/:gameId/:color         controllers.App.gameSocket(gameId: String, color: String)

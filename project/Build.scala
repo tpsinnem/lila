@@ -33,7 +33,7 @@ trait Dependencies {
 
 object ApplicationBuild extends Build with Resolvers with Dependencies {
 
-  private val buildSettings = Project.defaultSettings ++ Seq(
+  val buildSettings = Project.defaultSettings ++ Seq(
     organization := "com.github.ornicar",
     version := "0.1",
     scalaVersion := "2.9.1",
@@ -46,40 +46,62 @@ object ApplicationBuild extends Build with Resolvers with Dependencies {
     scalacOptions := Seq("-deprecation", "-unchecked")
   )
 
-  lazy val lila = PlayProject("lila", mainLang = SCALA, settings = buildSettings).settings(
-    libraryDependencies ++= Seq(
-      config,
-      json,
-      casbah,
-      salat,
-      guava,
-      apache,
-      jodaTime,
-      jodaConvert,
-      scalaTime,
-      dispatch,
-      auth,
-      plugins),
-    templatesImport ++= Seq(
-      "lila.game.{ DbGame, DbPlayer }",
-      "lila.user.User",
-      "lila.templating.Environment._",
-      "lila.ui.SiteMenu",
-      "lila.http.Context"),
-    incrementalAssetsCompilation := true,
-    javascriptEntryPoints <<= (sourceDirectory in Compile)(base ⇒
-      ((base / "assets" / "javascripts" ** "*.js") 
-        --- (base / "assets" / "javascripts" ** "_*")
-        --- (base / "assets" / "javascripts" / "vendor" ** "*.js")
-        --- (base / "assets" / "javascripts" ** "*.min.js")
-      ).get
-    ),
-    lessEntryPoints <<= baseDirectory(_ / "app" / "assets" / "stylesheets" ** "*.less")
-  ) dependsOn chess
+  val appName = "lila"
+
+  val wiki = PlayProject(
+    appName + "-wiki", mainLang = SCALA, path = file("modules/wiki")
+  ).settings(
+      libraryDependencies ++= Seq(
+        config,
+        json,
+        casbah,
+        salat,
+        guava,
+        apache,
+        jodaTime,
+        jodaConvert,
+        scalaTime,
+        dispatch,
+        plugins),
+      templatesImport ++= Seq(
+        "lila.game.{ DbGame, DbPlayer }",
+        "lila.user.User",
+        "lila.templating.Environment._",
+        "lila.ui.SiteMenu",
+        "lila.http.Context")
+    ) 
+
+  lazy val main = PlayProject(
+    appName, mainLang = SCALA, settings = buildSettings
+  ).settings(
+      libraryDependencies ++= Seq(
+        config,
+        json,
+        casbah,
+        salat,
+        guava,
+        apache,
+        jodaTime,
+        jodaConvert,
+        scalaTime,
+        dispatch,
+        auth,
+        plugins),
+      templatesImport ++= Seq(
+        "lila.game.{ DbGame, DbPlayer }",
+        "lila.user.User",
+        "lila.templating.Environment._",
+        "lila.ui.SiteMenu",
+        "lila.http.Context")
+    ) dependsOn (chess, wiki) aggregate (wiki)
+
+  //val common = PlayProject(
+  //appName + "-common", appVersion, path = file("modules/common")
+  //)
 
   lazy val cli = Project("cli", file("cli"), settings = buildSettings).settings(
     libraryDependencies ++= Seq()
-  ) dependsOn (lila)
+  ) dependsOn (main)
 
   lazy val chess = Project("chess", file("chess"), settings = buildSettings).settings(
     libraryDependencies ++= Seq(hasher)

@@ -1,0 +1,2 @@
+# Wiki
+GET   /wiki                          controllers.Wiki.home
