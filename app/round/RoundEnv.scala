@@ -27,7 +27,7 @@ final class RoundEnv(
   implicit val ctx = app
   import settings._
 
-  lazy val history = () ⇒ new History(timeout = GameMessageLifetime)
+  lazy val history = History(mongodb(MongoCollectionGameHistory)) _
 
   lazy val hubMaster = Akka.system.actorOf(Props(new HubMaster(
     makeHistory = history,

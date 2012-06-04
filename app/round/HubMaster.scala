@@ -14,7 +14,7 @@ import play.api.libs.concurrent._
 import play.api.Play.current
 
 final class HubMaster(
-    makeHistory: () ⇒ History,
+    makeHistory: String ⇒ History,
     uidTimeout: Int,
     hubTimeout: Int,
     playerTimeout: Int) extends Actor {
@@ -69,7 +69,7 @@ final class HubMaster(
 
   private def mkHub(gameId: String): ActorRef = context.actorOf(Props(new Hub(
     gameId = gameId,
-    history = makeHistory(),
+    history = makeHistory(gameId),
     uidTimeout = uidTimeout,
     hubTimeout = hubTimeout,
     playerTimeout = playerTimeout

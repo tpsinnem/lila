@@ -1,50 +1,29 @@
+
 package lila
 package lobby
 
 import scala.math.max
 import play.api.libs.json._
 import scalaz.effects._
-import com.mongodb.casbah.MongoCollection
-import com.mongodb.casbah.Imports._
 
-final class History(collection: MongoCollection) {
+import memo.Builder
 
-  private var privateVersion: Int = fetchVersion.unsafePerformIO
+final class History(timeout: Int) {
+
+  private var privateVersion = 0
+  private val messages = memo.Builder.expiry[Int, JsObject](timeout)
 
   def version = privateVersion
 
-  def since(v: Int): List[JsObject] = {
-    (v < version).fold(
-      fetchEvents(v + 1 -> version),
-      Nil)
-  }
+  def since(v: Int): List[JsObject] =
+    (v + 1 to version).toList map message flatten
+
+  private def message(v: Int) = Option(messages getIfPresent v)
 
   def +=(msg: JsObject): JsObject = {
     privateVersion = privateVersion + 1
-    val v = version
-    collection += DBObject("_id" -> version, "e" -> msg.toString)
-    val vmsg = msg ++ JsObject(Seq("v" -> JsNumber(v)))
+    val vmsg = msg ++ JsObject(Seq("v" -> JsNumber(privateVersion)))
+    messages.put(privateVersion, vmsg)
     vmsg
   }
-
-  def set(key: String, value: Any): Unit = {
-    collection += DBObject("_id" -> key, field -> value)
-  }
-
-  private def fetchVersion: IO[Int] = io {
-    val result = collection
-      .find(DBObject())
-      .sort(DBObject("_id" -> -1))
-      .limit(1)
-    (for {
-      row ← result.hasNext option result.next
-      version ← row.getAs[Int]("version")
-    } yield version) | 0
-  }
-
-  private def fetch: IO[Set[String]] = io {
-    collection.find() map { obj ⇒
-      obj.getAs[String]("_id")
-    } 
-  } map (_.flatten.toSet)
 }

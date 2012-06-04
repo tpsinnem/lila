@@ -11,7 +11,6 @@ final class Settings(config: Config) {
 
   val MonitorTimeout = millis("monitor.timeout")
 
-  val GameMessageLifetime = millis("game.message.lifetime")
   val GameUidTimeout = millis("game.uid.timeout")
   val GameHubTimeout = millis("game.hub.timeout")
   val GamePlayerTimeout = millis("game.player.timeout")
@@ -32,7 +31,6 @@ final class Settings(config: Config) {
 
   val LobbyEntryMax = getInt("lobby.entry.max")
   val LobbyMessageMax = getInt("lobby.message.max")
-  val LobbyMessageLifetime = millis("lobby.message.lifetime")
 
   val MemoHookTimeout = millis("memo.hook.timeout")
   val MemoUsernameTimeout = millis("memo.username.timeout")
@@ -58,6 +56,7 @@ final class Settings(config: Config) {
   val MongoBlockingThreads = getInt("mongo.threadsAllowedToBlockForConnectionMultiplier")
 
   val MongoCollectionGame = getString("mongo.collection.game")
+  val MongoCollectionGameHistory = getString("mongo.collection.game_history")
   val MongoCollectionHook = getString("mongo.collection.hook")
   val MongoCollectionLobbyEntry = getString("mongo.collection.lobby_entry")
   val MongoCollectionLobbyMessage = getString("mongo.collection.lobby_message")

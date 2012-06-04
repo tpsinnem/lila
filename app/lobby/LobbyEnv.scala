@@ -27,8 +27,8 @@ final class LobbyEnv(
   implicit val ctx = app
   import settings._
 
-  lazy val history = new History(
-    collection = mongodb(MongoCollectionLobbyHistory))
+  lazy val history = new History(1)
+    //collection = mongodb(MongoCollectionLobbyHistory))
 
   lazy val messenger = new Messenger(
     messageRepo = messageRepo,
