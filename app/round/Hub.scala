@@ -85,7 +85,7 @@ final class Hub(
     watchers = members.values count (_.watcher))
 
   def notify(events: List[Event]) {
-    val vevents = events map history.+=
+    val vevents = history += events 
     members.values foreach { m ⇒ batch(m, vevents) }
   }
 
