@@ -59,9 +59,10 @@ final class Settings(config: Config) {
 
   val MongoCollectionGame = getString("mongo.collection.game")
   val MongoCollectionHook = getString("mongo.collection.hook")
-  val MongoCollectionEntry = getString("mongo.collection.entry")
+  val MongoCollectionLobbyEntry = getString("mongo.collection.lobby_entry")
+  val MongoCollectionLobbyMessage = getString("mongo.collection.lobby_message")
+  val MongoCollectionLobbyHistory = getString("mongo.collection.lobby_history")
   val MongoCollectionUser = getString("mongo.collection.user")
-  val MongoCollectionMessage = getString("mongo.collection.message")
   val MongoCollectionHistory = getString("mongo.collection.history")
   val MongoCollectionRoom = getString("mongo.collection.room")
   val MongoCollectionConfig = getString("mongo.collection.config")

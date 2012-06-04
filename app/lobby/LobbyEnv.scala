@@ -27,7 +27,8 @@ final class LobbyEnv(
   implicit val ctx = app
   import settings._
 
-  lazy val history = new History(timeout = LobbyMessageLifetime)
+  lazy val history = new History(
+    collection = mongodb(MongoCollectionLobbyHistory))
 
   lazy val messenger = new Messenger(
     messageRepo = messageRepo,
@@ -47,7 +48,7 @@ final class LobbyEnv(
     socket = socket)
 
   lazy val messageRepo = new MessageRepo(
-    collection = mongodb(MongoCollectionMessage),
+    collection = mongodb(MongoCollectionLobbyMessage),
     max = LobbyMessageMax)
 
   lazy val hookRepo = new HookRepo(mongodb(MongoCollectionHook))
