@@ -6,7 +6,6 @@ require_once __DIR__.'/base_script.php';
 $remote="marty";
 $remoteDir="/home/lila2";
 $rsyncoptions="--archive --force --delete --progress --compress --checksum --exclude-from=bin/rsync_exclude";
-$testurl="http://188.165.194.171:9071/ai/stockfish/play";
 
 if (!file_exists('bin/rsync_exclude')) {
     exit("This script must be run from the project root");
@@ -14,4 +13,3 @@ if (!file_exists('bin/rsync_exclude')) {
 
 $remoteTarget = "$remote:$remoteDir";
 show_run("Deploy to $remoteTarget", "rsync $rsyncoptions ./ $remoteTarget");
-//show_run("Run restart", "ssh $remote \"cd $remoteDir && bin/restart\"");
