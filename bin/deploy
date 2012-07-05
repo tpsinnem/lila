@@ -3,10 +3,10 @@
 
 require_once __DIR__.'/base_script.php';
 
-$remote="phobos";
-$remoteDir="/home/lila";
+$remote="marty";
+$remoteDir="/home/lila2";
 $rsyncoptions="--archive --force --delete --progress --compress --checksum --exclude-from=bin/rsync_exclude";
-$testurl="http://en.lichess.org";
+$testurl="http://188.165.194.171:9071/ai/stockfish/play";
 
 if (!file_exists('bin/rsync_exclude')) {
     exit("This script must be run from the project root");
