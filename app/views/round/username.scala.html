@@ -1,0 +1,15 @@
+@(player: DbPlayer, engine: Boolean = false)(implicit ctx: Context)
+
+@ai(level: Int) = {
+<div class="username connected">
+  @aiName(level)
+</div>
+}
+
+@human = {
+<div class="username @player.color.name">
+  @playerLink(player, Some("blank_if_play"), engine = engine)
+</div>
+}
+
+@player.aiLevel.fold(ai, human)

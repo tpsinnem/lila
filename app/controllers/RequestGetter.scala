@@ -1,18 +1,23 @@
 package controllers
 
-import play.api.mvc.Request
+import lila._
+import http.Context
+
+import play.api.mvc.RequestHeader
 
 trait RequestGetter {
 
-  def get(name: String)(implicit request: Request[_]) =
-    request.queryString get name flatMap (_.headOption)
+  def get(name: String)(implicit ctx: Context): Option[String] = get(name, ctx.req)
 
-  def getInt(name: String)(implicit request: Request[_]) =
-    get(name)(request) map (_.toInt)
+  def get(name: String, req: RequestHeader): Option[String] =
+    req.queryString get name flatMap (_.headOption) filter (""!=)
 
-  def getOr(name: String, default: String)(implicit request: Request[_]) =
-    get(name) getOrElse default
+  def getInt(name: String)(implicit ctx: Context) =
+    get(name)(ctx) map (_.toInt)
 
-  def getIntOr(name: String, default: Int)(implicit request: Request[_]) =
-    getInt(name) getOrElse default
+  def getOr(name: String, default: String)(implicit ctx: Context) =
+    get(name)(ctx) getOrElse default
+
+  def getIntOr(name: String, default: Int)(implicit ctx: Context) =
+    getInt(name)(ctx) getOrElse default
 }

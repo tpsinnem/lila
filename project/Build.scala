@@ -7,38 +7,40 @@ trait Resolvers {
   val typesafe = "typesafe.com" at "http://repo.typesafe.com/typesafe/releases/"
   val iliaz = "iliaz.com" at "http://scala.iliaz.com/"
   val sonatype = "sonatype" at "http://oss.sonatype.org/content/repositories/releases"
+  val sonatypeS = "sonatype snapshots" at "http://oss.sonatype.org/content/repositories/snapshots"
+  val t2v = "t2v.jp repo" at "http://www.t2v.jp/maven-repo/"
+  val guice = "guice-maven" at "http://guice-maven.googlecode.com/svn/trunk"
+  val jgitMaven = "jgit-maven" at "http://download.eclipse.org/jgit/maven"
 }
 
 trait Dependencies {
+  val scalachess = "com.github.ornicar" %% "scalachess" % "2.10"
   val scalaz = "org.scalaz" %% "scalaz-core" % "6.0.4"
-  val specs2 = "org.specs2" %% "specs2" % "1.8.2"
-  val casbah = "com.mongodb.casbah" %% "casbah" % "2.1.5-1"
-  val salat = "com.novus" %% "salat-core" % "0.0.8-SNAPSHOT"
-  val scalalib = "com.github.ornicar" %% "scalalib" % "1.24"
-  val hasher = "com.roundeights" % "hasher" % "0.3" from "http://cloud.github.com/downloads/Nycto/Hasher/hasher_2.9.1-0.3.jar"
-  val config = "com.typesafe.config" % "config" % "0.3.0"
+  val specs2 = "org.specs2" %% "specs2" % "1.11"
+  val salat = "com.novus" %% "salat-core" % "1.9-SNAPSHOT"
+  val scalalib = "com.github.ornicar" %% "scalalib" % "1.37"
+  val config = "com.typesafe" % "config" % "0.4.1"
   val json = "com.codahale" %% "jerkson" % "0.5.0"
-  val guava = "com.google.guava" % "guava" % "11.0.2"
+  val guava = "com.google.guava" % "guava" % "12.0"
   val apache = "org.apache.commons" % "commons-lang3" % "3.1"
-  val jodaTime = "joda-time" % "joda-time" % "2.0"
-  val jodaConvert = "org.joda" % "joda-convert" % "1.2"
   val scalaTime = "org.scala-tools.time" %% "time" % "0.5"
   val slf4jNop = "org.slf4j" % "slf4j-nop" % "1.6.4"
-  val dispatch = "net.databinder" %% "dispatch-http" % "0.8.7"
-
-  // benchmark
-  val instrumenter = "com.google.code.java-allocation-instrumenter" % "java-allocation-instrumenter" % "2.0"
-  val gson = "com.google.code.gson" % "gson" % "1.7.1"
+  val dispatch = "net.databinder" %% "dispatch-http" % "0.8.8"
+  val paginator = "com.github.ornicar" %% "paginator-core" % "1.6"
+  val paginatorSalat = "com.github.ornicar" %% "paginator-salat-adapter" % "1.5"
+  val csv = "com.github.tototoshi" %% "scala-csv" % "0.3"
+  val hasher = "com.roundeights" % "hasher" % "0.3" from "http://cloud.github.com/downloads/Nycto/Hasher/hasher_2.9.1-0.3.jar"
+  val jgit = "org.eclipse.jgit" % "org.eclipse.jgit" % "1.3.0.201202151440-r"
 }
 
 object ApplicationBuild extends Build with Resolvers with Dependencies {
 
   private val buildSettings = Project.defaultSettings ++ Seq(
     organization := "com.github.ornicar",
-    version := "0.1",
+    version := "1.0",
     scalaVersion := "2.9.1",
-    resolvers := Seq(iliaz, codahale, sonatype, typesafe),
-    libraryDependencies := Seq(scalalib),
+    resolvers := Seq(iliaz, codahale, sonatype, sonatypeS, typesafe, t2v, guice, jgitMaven),
+    libraryDependencies := Seq(scalaz, scalalib, hasher),
     libraryDependencies in test := Seq(specs2),
     shellPrompt := {
       (state: State) ⇒ "%s> ".format(Project.extract(state).currentProject.id)
@@ -47,46 +49,30 @@ object ApplicationBuild extends Build with Resolvers with Dependencies {
   )
 
   lazy val lila = PlayProject("lila", mainLang = SCALA, settings = buildSettings).settings(
-    libraryDependencies ++= Seq(scalaz)
-  ) dependsOn (system)
+    libraryDependencies ++= Seq(
+      scalachess,
+      config,
+      json,
+      salat,
+      guava,
+      apache,
+      scalaTime,
+      dispatch,
+      paginator,
+      paginatorSalat,
+      csv,
+      jgit),
+    templatesImport ++= Seq(
+      "lila.game.{ DbGame, DbPlayer, Pov }",
+      "lila.user.User",
+      "lila.security.Permission",
+      "lila.templating.Environment._",
+      "lila.ui",
+      "lila.http.Context",
+      "com.github.ornicar.paginator.Paginator")
+  ) 
 
   lazy val cli = Project("cli", file("cli"), settings = buildSettings).settings(
-    libraryDependencies ++= Seq(slf4jNop, scalaz)
-  ) dependsOn (system)
-
-  lazy val system = Project("system", file("system"), settings = buildSettings).settings(
-    libraryDependencies ++= Seq(scalaz, config, json, casbah, salat, guava, apache, jodaTime, jodaConvert, scalaTime, dispatch)
-  ) dependsOn (chess)
-
-  lazy val chess = Project("chess", file("chess"), settings = buildSettings).settings(
-    libraryDependencies ++= Seq(hasher)
-  )
-
-  //lazy val benchmark = Project("benchmark", file("benchmark"), settings = buildSettings).settings(
-    //fork in run := true,
-    //libraryDependencies ++= Seq(instrumenter, gson),
-    //// we need to add the runtime classpath as a "-cp" argument
-    //// to the `javaOptions in run`, otherwise caliper
-    //// will not see the right classpath and die with a ConfigurationException
-    //// unfortunately `javaOptions` is a SettingsKey and
-    //// `fullClasspath in Runtime` is a TaskKey, so we need to
-    //// jump through these hoops here in order to
-    //// feed the result of the latter into the former
-    //onLoad in Global ~= { previous ⇒
-      //state ⇒
-        //previous {
-          //state get key match {
-            //case None ⇒
-              //// get the runtime classpath, turn into a colon-delimited string
-              //val classPath = Project.runTask(fullClasspath in Runtime, state).get._2.toEither.right.get.files.mkString(":")
-              //// return a state with javaOptionsPatched = true and javaOptions set correctly
-              //Project.extract(state).append(Seq(javaOptions in run ++= Seq("-cp", classPath)), state.put(key, true))
-            //case Some(_) ⇒ state // the javaOptions are already patched
-          //}
-        //}
-    //}
-  //) dependsOn (chess, system)
-
-  //// attribute key to prevent circular onLoad hook (for benchmark)
-  //val key = AttributeKey[Boolean]("javaOptionsPatched")
+    libraryDependencies ++= Seq()
+  ) dependsOn (lila)
 }

@@ -1,6 +1,38 @@
-move times
-blurs
-ie9 testing (frozen sync/clock) // on play or chat against human
-ping nbm
-need ability to cancel rematch
-compress player.ps notation
+chat should autoscroll only when at bottom
+finish flagged game
+It's possible to join your own game and win it, which will then be displayed as a win and I saw players who abuse this to manipulate their stats. 
+player timeout depending on game duration
+do not count games vs engine as win/loss
+start chess960 after both player move http://fr.lichess.org/forum/lichess-feedback/clock-fairness-in-chess960-games
+chess960 confirmation http://fr.lichess.org/forum/lichess-feedback/separate-960-lobby?page=1#7
+use play-navigator router case class MyRegexStr(value: String); implicit val MyRegexStrPathParam: PathParam[MyRegexStr] = new PathParam[MyRegexStr] { def apply(s: MyRegexStr) = s.value}; def unapply(s: String) = val Rx = "(\w+)".r; s match { case Rx(x) => Some(x); case _ => None } }
+http://codetunes.com/2012/05/09/scala-dsl-tutorial-writing-web-framework-router
+use POST instead of GET where it makes sense
+make the wiki static html pages managed by git?
+guess friend list
+tournaments http://www.chess.com/tournaments/help.html
+cheater slash timeline
+best game(s) to watch
+use twitter tooltip instead of tipsy http://twitter.github.com/bootstrap/javascript.html#tooltip
+volume control
+check(mate) sound
+mute player = no game room either
+takeback play 2 times ?? http://en.lichess.org/analyse/nfjchnmo/black move 45
+movetimes chart
+user win chart: split in timeout/mate/...
+style sound toggle
+show lobby chat to anon (and rated games?)
+or show empty chat
+game chat box css issue http://en.lichess.org/forum/lichess-feedback/problem-with-the-chat-box#1
+show last move on miniboards
+analysis: replace scores with bar (adv+delta visible)
+legend feedback: http://en.lichess.org/forum/lichess-feedback/a-few-points-bugssuggestions#1
+http://en.lichess.org/forum/lichess-feedback/problems-with-yin-yang#1
+also translate websockets error message
+play with a friend possible bug http://en.lichess.org/forum/lichess-feedback/play-with-a-friend-bug
+@someone = link to someone's profile
+
+next deploy
+-----------
+db.analysis.ensureIndex({done:1})
+db.analysis.ensureIndex({date:-1})

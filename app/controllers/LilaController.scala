@@ -1,76 +1,169 @@
 package controllers
 
-import lila.http._
+import lila._
+import user.{ User ⇒ UserModel }
+import security.{ AuthImpl, Permission, Granter }
+import http.{ Context, HeaderContext, BodyContext }
+import core.Global
 
-import play.api._
-import mvc._
-import data._
-import http._
-
-import scala.io.Codec
+import play.api.mvc._
+import play.api.data.Form
+import play.api.http._
 import com.codahale.jerkson.Json
-import scalaz.effects.IO
+import scalaz.effects._
 
-trait LilaController extends Controller with ContentTypes with RequestGetter {
+trait LilaController
+    extends Controller
+    with ContentTypes
+    with RequestGetter
+    with ResponseWriter
+    with AuthImpl {
 
   lazy val env = Global.env
+  implicit val current = env.app
 
-  def JsonOk(map: Map[String, Any]) = Ok(Json generate map) as JSON
+  override implicit def lang(implicit req: RequestHeader) =
+    env.i18n.pool.lang(req)
+
+  def toJson(map: Map[String, Any]) = Json generate map
+
+  def Open(f: Context ⇒ Result): Action[AnyContent] =
+    Open(BodyParsers.parse.anyContent)(f)
+
+  def Open[A](p: BodyParser[A])(f: Context ⇒ Result): Action[A] =
+    Action(p)(req ⇒ f(reqToCtx(req)))
+
+  def OpenBody(f: BodyContext ⇒ Result): Action[AnyContent] =
+    OpenBody(BodyParsers.parse.anyContent)(f)
+
+  def OpenBody[A](p: BodyParser[A])(f: BodyContext ⇒ Result): Action[A] =
+    Action(p)(req ⇒ f(reqToCtx(req)))
+
+  def Auth(f: Context ⇒ UserModel ⇒ Result): Action[AnyContent] =
+    Auth(BodyParsers.parse.anyContent)(f)
+
+  def Auth[A](p: BodyParser[A])(f: Context ⇒ UserModel ⇒ Result): Action[A] =
+    Action(p)(req ⇒ {
+      val ctx = reqToCtx(req)
+      ctx.me.fold(me ⇒ f(ctx)(me), authenticationFailed(ctx.req))
+    })
+
+  def AuthBody(f: BodyContext ⇒ UserModel ⇒ Result): Action[AnyContent] =
+    AuthBody(BodyParsers.parse.anyContent)(f)
+
+  def AuthBody[A](p: BodyParser[A])(f: BodyContext ⇒ UserModel ⇒ Result): Action[A] =
+    Action(p)(req ⇒ {
+      val ctx = reqToCtx(req)
+      ctx.me.fold(me ⇒ f(ctx)(me), authenticationFailed(ctx.req))
+    })
+
+  def Secure(perm: Permission)(f: Context ⇒ UserModel ⇒ Result): Action[AnyContent] =
+    Secure(BodyParsers.parse.anyContent)(perm)(f)
+
+  def Secure[A](p: BodyParser[A])(perm: Permission)(f: Context ⇒ UserModel ⇒ Result): Action[A] =
+    Auth(p) { ctx ⇒
+      me ⇒
+        ctx.isGranted(perm).fold(f(ctx)(me), authorizationFailed(ctx.req))
+    }
+
+  def Firewall[A <: Result](a: ⇒ A)(implicit ctx: Context): Result =
+    env.security.firewall.accepts(ctx.req).fold(
+      a, {
+        env.security.firewall.logBlock(ctx.req)
+        Redirect(routes.Lobby.home())
+      }
+    )
+
+  def JsonOk(map: Map[String, Any]) = Ok(toJson(map)) as JSON
+
+  def JsonOk(list: List[Any]) = Ok(Json generate list) as JSON
 
   def JsonIOk(map: IO[Map[String, Any]]) = JsonOk(map.unsafePerformIO)
 
   def ValidOk(valid: Valid[Unit]) = valid.fold(
-    e ⇒ BadRequest(e.list mkString "\n"),
+    e ⇒ BadRequest(e.shows),
     _ ⇒ Ok("ok")
   )
 
   def ValidIOk(valid: IO[Valid[Unit]]) = valid.unsafePerformIO.fold(
-    e ⇒ BadRequest(e.list mkString "\n"),
+    e ⇒ BadRequest(e.shows),
     _ ⇒ Ok("ok")
   )
 
-  def ValidIORedir(op: IO[Valid[Unit]], url: ⇒ String) =
-    op.unsafePerformIO.fold(
-      failures ⇒ {
-        println(failures.list mkString "\n")
-        Redirect("/" + url)
-      },
-      _ ⇒ Redirect("/" + url)
-    )
-
-  def FormValidIOk[A](form: Form[A])(op: A ⇒ IO[Unit])(implicit request: Request[_]) =
+  def FormResult[A](form: Form[A])(op: A ⇒ Result)(implicit req: Request[_]) =
     form.bindFromRequest.fold(
       form ⇒ BadRequest(form.errors mkString "\n"),
-      data ⇒ IOk(op(data))
+      data ⇒ op(data)
     )
 
-  def IOk(op: IO[Unit]) = Ok(op.unsafePerformIO)
-
-  // I like Unit requests.
-  implicit def wUnit: Writeable[Unit] =
-    Writeable[Unit](_ ⇒ Codec toUTF8 "ok")
-  implicit def ctoUnit: ContentTypeOf[Unit] =
-    ContentTypeOf[Unit](Some(ContentTypes.TEXT))
-
-  implicit def wFloat: Writeable[Float] =
-    Writeable[Float](f ⇒ Codec toUTF8 f.toString)
-  implicit def ctoFloat: ContentTypeOf[Float] =
-    ContentTypeOf[Float](Some(ContentTypes.TEXT))
-
-  implicit def wLong: Writeable[Long] =
-    Writeable[Long](a ⇒ Codec toUTF8 a.toString)
-  implicit def ctoLong: ContentTypeOf[Long] =
-    ContentTypeOf[Long](Some(ContentTypes.TEXT))
-
-  implicit def wInt: Writeable[Int] =
-    Writeable[Int](i ⇒ Codec toUTF8 i.toString)
-  implicit def ctoInt: ContentTypeOf[Int] =
-    ContentTypeOf[Int](Some(ContentTypes.TEXT))
-
-  implicit def richForm[A](form: Form[A]) = new {
-    def toValid: Valid[A] = form.fold(
-      form ⇒ failure(nel("Invalid form", form.errors.map(_.toString): _*)),
-      data ⇒ success(data)
+  def FormIOResult[A](form: Form[A])(op: A ⇒ IO[Result])(implicit req: Request[_]) =
+    form.bindFromRequest.fold(
+      form ⇒ BadRequest(form.errors mkString "\n"),
+      data ⇒ op(data).unsafePerformIO
     )
+
+  def IOk[A](op: IO[A])(implicit writer: Writeable[A], ctype: ContentTypeOf[A]) =
+    Ok(op.unsafePerformIO)
+
+  def IOResult[A](op: IO[Result]) =
+    op.unsafePerformIO
+
+  def IORedirect(op: IO[Call]) = Redirect(op.unsafePerformIO)
+
+  def OptionOk[A, B](oa: Option[A])(op: A ⇒ B)(
+    implicit writer: Writeable[B],
+    ctype: ContentTypeOf[B],
+    ctx: Context) =
+    oa.fold(a ⇒ Ok(op(a)), notFound(ctx))
+
+  def IOptionOk[A, B](ioa: IO[Option[A]])(op: A ⇒ B)(
+    implicit writer: Writeable[B],
+    ctype: ContentTypeOf[B],
+    ctx: Context) =
+    ioa.unsafePerformIO.fold(a ⇒ Ok(op(a)), notFound(ctx))
+
+  def IOptionIOk[A, B](ioa: IO[Option[A]])(op: A ⇒ IO[B])(
+    implicit writer: Writeable[B],
+    ctype: ContentTypeOf[B],
+    ctx: Context) =
+    ioa flatMap { aOption ⇒
+      aOption.fold(
+        a ⇒ op(a) map { Ok(_) },
+        io(notFound(ctx))): IO[Result]
+    } unsafePerformIO
+
+  def IOptionIOResult[A](ioa: IO[Option[A]])(op: A ⇒ IO[Result])(implicit ctx: Context) =
+    ioa flatMap { _.fold(op, io(notFound(ctx))) } unsafePerformIO
+
+  def IOptionRedirect[A](ioa: IO[Option[A]])(op: A ⇒ Call)(implicit ctx: Context) =
+    ioa map {
+      _.fold(a ⇒ Redirect(op(a)), io(notFound(ctx)))
+    } unsafePerformIO
+
+  def IOptionIORedirect[A](ioa: IO[Option[A]])(op: A ⇒ IO[Call])(implicit ctx: Context) =
+    (ioa flatMap {
+      _.fold(a ⇒ op(a) map { b ⇒ Redirect(b) }, io(notFound(ctx)))
+    }: IO[Result]).unsafePerformIO
+
+  def IOptionResult[A](ioa: IO[Option[A]])(op: A ⇒ Result)(implicit ctx: Context) =
+    ioa.unsafePerformIO.fold(a ⇒ op(a), notFound(ctx))
+
+  def notFound(ctx: Context) = Lobby handleNotFound ctx
+
+  def todo = Open { implicit ctx ⇒
+    NotImplemented(views.html.site.todo())
+  }
+
+  def isGranted(permission: Permission.type ⇒ Permission)(implicit ctx: Context): Boolean =
+    Granter.option(permission(Permission))(ctx.me)
+
+  protected def reqToCtx(req: Request[_]): BodyContext =
+    Context(req, restoreUser(req) ~ setOnline)
+
+  protected def reqToCtx(req: RequestHeader): HeaderContext =
+    Context(req, restoreUser(req) ~ setOnline)
+
+  private def setOnline(user: Option[UserModel]) {
+    user foreach { u ⇒ env.user.usernameMemo.put(u.username).unsafePerformIO }
   }
 }

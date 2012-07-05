@@ -1,0 +1,54 @@
+@(categ: lila.forum.Categ, topic: lila.forum.Topic, posts: Paginator[lila.forum.Post], formWithCaptcha: Option[(Form[_], lila.site.Captcha.Challenge)])(implicit ctx: Context)
+
+@forum.layout(
+title = topic.name) {
+<div class="topic">
+  <ol class="crumbs">
+    <li><a href="@routes.ForumCateg.index">Forum</a></li>
+    <li><a href="@routes.ForumCateg.show(categ.slug)">@categ.name</a></li>
+    <li><h1>@topic.name</h1></li>
+  </ol>
+  <div class="bar top clearfix">
+    <div class="pagination">
+      @forum.pagination(routes.ForumTopic.show(categ.slug, topic.slug, 1), posts)
+    </div>
+  </div>
+
+  <div class="forum_posts_list">
+    @posts.currentPageResults.map { post =>
+    <div class="post" id="@post.number">
+      <div class="metas clearfix">
+        @authorLink(post, "author".some)
+        <span class="createdAt">@showDate(post.createdAt)</span>
+        <a class="anchor" href="@routes.ForumTopic.show(categ.slug, topic.slug, posts.currentPage)#@post.number">#@post.number</a>
+        @if(isGranted(Permission.ModerateForum)) {
+        <a class="delete" href="@routes.ForumPost.delete(post.id)">Delete</a>
+        }
+      </div>
+      <p class="message">@autoLink(post.text)</p>
+    </div>
+    }
+  </div>
+
+  @formWithCaptcha.map {
+  case (form, captcha) => {
+  <div class="topicReply">
+    <h2 class="postNewTitle" id="reply">Reply to this topic</h2>
+    <form action="@routes.ForumPost.create(categ.slug, topic.slug, posts.currentPage)#reply" method="POST" novalidate>
+      @forum.post.formFields(form("text"), form("author"))
+      @base.captcha(form("move"), form("gameId"), captcha)
+      @errMsg(form)
+      <input type="submit" class="submit button" value="Reply" />
+      <a href="@routes.ForumCateg.show(categ.slug)" style="margin-left:20px">Cancel</a>
+    </form>
+  </div>
+  }
+  }
+
+  <div class="bar bottom clearfix">
+    <div class="pagination">
+      @forum.pagination(routes.ForumTopic.show(categ.slug, topic.slug, 1), posts)
+    </div>
+  </div>
+</div>
+}

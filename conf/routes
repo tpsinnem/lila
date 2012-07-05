@@ -1,1 +1,4 @@
-GET   /ai                               controllers.AiC.run
+# AI
+GET   /ai/play/crafty                  controllers.Ai.playCrafty
+GET   /ai/play/stockfish               controllers.Ai.playStockfish
+GET   /ai/analyse/stockfish            controllers.Ai.analyseStockfish

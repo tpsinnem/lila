@@ -1,0 +1,118 @@
+#lichess h1 {
+  font-size: 2em;
+  margin-bottom: 5px;
+}
+#pgnText {
+  display: none;
+}
+
+div.board_wrap {
+  float: left;
+  width: 514px;
+  min-height: 558px;
+}
+div.moves_wrap {
+  margin-left: 532px;
+  position: relative;
+}
+span.board_mark {
+  position: absolute;
+  text-transform: uppercase;
+  font-size: 10px;
+  color: #bbb;
+  font-weight: bold;
+}
+span.board_mark.vert {
+  right: -10px;
+}
+span.board_mark.horz {
+  bottom: -14px;
+}
+
+@font-face {
+  font-family: 'pgn4web ChessSansMerida';
+  src: url('ChessSansMerida.eot');
+  src: url('/assets/vendor/pgn4web/fonts/ChessSansMerida.eot?#iefix') format('embedded-opentype'), url('/assets/vendor/pgn4web/fonts/ChessSansMerida.woff') format('woff'), url('/assets/vendor/pgn4web/fonts/ChessSansMerida.ttf') format('truetype'), url('/assets/vendor/pgn4web/fonts/ChessSansMerida.svg#ChessSansMerida') format('svg');
+}
+
+#GameBoard {
+  position: relative;
+}
+
+#GameBoard table.boardTable {
+  box-shadow: 0 0 7px #bbb;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+#GameBoard.flip table, #GameBoard.flip img.pieceImage {
+  -o-transform: rotate(180deg);
+  -webkit-transform: rotate(180deg);
+  -moz-transform: rotate(180deg);
+  transform: rotate(180deg);
+}
+#GameBoard td.highlightWhiteSquare img,
+#GameBoard td.highlightBlackSquare img {
+  background: url(../images/over5.png) no-repeat;
+}
+#GameBoard td img {
+  width: 64px;
+  height: 64px;
+  display: block;
+}
+
+#GameButtons {
+  margin-top: 20px;
+}
+#GameButtons input {
+  width: 100px;
+  height: 2em;
+}
+#GameText {
+  font-size: 1.4em;
+  width: 220px;
+  height: 512px;
+  margin-bottom: 1em;
+  background: #f7f7f7;
+  border: 1px solid #C0C0C0;
+  overflow: auto;
+  border-radius: 4px;
+  box-shadow: 0 0 7px #d0d0d0;
+}
+#GameText table {
+  width: 100%;
+}
+#GameText tr:nth-child(even) {
+  background: #f0f0f0;
+}
+#GameText th {
+  padding-left: 8px;
+}
+#GameText a.move {
+  font-family: 'pgn4web ChessSansMerida', 'pgn4web Liberation Sans', sans-serif;
+  text-decoration: none;
+  padding: 5px 10px;
+  display: block;
+  color: #444;
+}
+#GameText a:hover {
+  background: #e0e0e0;
+}
+#GameText a.moveOn {
+  background: #FFE73B;
+}
+#GameLastComment {
+  position: absolute;
+  top: 512px;
+  margin-top: 1em;
+  font-size: 1.4em;
+  width: 220px;
+}
+
+div.adv_chart {
+  margin-top: 10px;
+  height: 150px;
+  width: 512px;
+}
+div.adv_chart iframe {
+  height: 150px;
+}

@@ -1,0 +1,19 @@
+@(title: String, goodies: Option[Html] = None)(body: Html)(implicit ctx: Context)
+
+@moreCss = {
+@cssTag("translation.css")
+}
+@moreJs = {
+@jsTag("translation.js")
+}
+
+@base.layout(
+title = title, 
+moreCss = moreCss,
+moreJs = moreJs,
+goodies = goodies,
+active = none) {
+<div class="content_box">
+  @body
+</div>
+}

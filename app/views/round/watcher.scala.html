@@ -1,0 +1,68 @@
+@(pov: Pov, version: Int, roomHtml: Html, bookmarkers: List[User])(implicit ctx: Context)
+
+@import pov._
+
+@title = @{ "Watch %s - %s".format(gameId, color) }
+
+@underchat = {
+<div class="watchers">
+  @trans.spectators() <span class="list"></span>
+</div>
+}
+
+@round.layout(
+title = title,
+goodies = views.html.game.infoBox(pov),
+chat = round.room(roomHtml, true).some,
+underchat = underchat.some) {
+<div class="lichess_game clearfix lichess_player_@color"
+  data-socket-url="@routes.Round.websocketWatcher(gameId, color.name)"
+  data-table-url="@routes.Round.tableWatcher(gameId, color.name)"
+  data-players-url="@routes.Round.players(gameId)">
+  <div class="lichess_board_wrap">
+    @widget.connection()
+    <div class="lichess_board with_marks">@Html(ui.Board.render(pov))</div>
+    <div id="dont_touch">@trans.youAreViewingThisGameAsASpectator()</div>
+  </div>
+  <div class="lichess_ground">
+    @round.cemetery(pov, "top")
+    <div class="lichess_table_wrap">
+      @game.clock.map { c =>
+      @round.clock(c, !pov.color, "top")
+      }
+      <div class="lichess_table@{ if(game.hasClock) " table_with_clock" }@{ if(game.finished) " finished" }">
+        <div class="lichess_opponent">
+          @round.username(pov.opponent)
+        </div>
+        <div class="lichess_separator"></div>
+        <div class="table_inner">
+          @round.table.watch(pov)
+        </div>
+      </div>
+      @game.clock.map { c =>
+      @round.clock(c, pov.color, "bottom")
+      }
+      @if(isGranted(Permission.ViewBlurs)) {
+      @game.players.map { p =>
+      @if(game.playerBlurPercent(p.color) > 30) {
+      <br />@playerLink(p, withOnline = false) @p.blurs/@game.playerMoves(p.color) blurs (@game.playerBlurPercent(p.color)%)
+      }
+      }
+      }
+    </div>
+    @round.cemetery(!pov, "bottom")
+  </div>
+</div>
+<script type="text/javascript">var lichess_data = @Html(roundWatcherJsData(pov, version))</script>
+@views.html.game.more(pov, bookmarkers) {
+<nav>
+<a href="@routes.Analyse.replay(gameId, color.name)">@trans.replayAndAnalyse()</a>
+<br />
+<a href="@routes.Round.watcher(gameId, (!color).name)">@trans.flipBoard()</a>
+<br />
+<a href="@routes.Analyse.stats(gameId)">@trans.viewGameStats()</a>
+<br />
+<a class="view_pgn_toggle" href="@routes.Analyse.pgn(game.id)">View PGN</a> 
+</nav>
+}
+}
