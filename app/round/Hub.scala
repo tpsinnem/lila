@@ -70,6 +70,10 @@ final class Hub(
     case GameEvents(_, Nil)    ⇒
     case GameEvents(_, events) ⇒ notify(events)
 
+    case msg @ AnalysisAvailable(_) ⇒ {
+      notifyAll("analysisAvailable", JsNull)
+    }
+
     case Quit(uid) ⇒ {
       quit(uid)
       notify(crowdEvent :: Nil)
@@ -104,10 +108,7 @@ final class Hub(
 
   def batch(member: Member, vevents: List[VersionedEvent]) {
     if (vevents.nonEmpty) {
-      member.channel push JsObject(Seq(
-        "t" -> JsString("batch"),
-        "d" -> JsArray(vevents map (_ jsFor member))
-      ))
+      member.channel push makeEvent("batch", JsArray(vevents map (_ jsFor member)))
     }
   }
 
