@@ -1,34 +1,42 @@
 package lila
 package ai
 
-import dispatch.{ Http, NoLogging, url }
-import dispatch.thread.{ Safety ⇒ ThreadSafety }
 import scalaz.effects._
+import akka.dispatch.Future
 
 trait Client extends Ai {
 
   val playUrl: String
 
-  protected def tryPing: IO[Option[Int]] 
+  protected def tryPing: Future[Int]
 
   // tells whether the remote AI is healthy or not
   // frequently updated by a scheduled actor
   protected var ping = none[Int]
   protected val pingAlert = 3000
 
-  protected lazy val http = new Http with ThreadSafety with NoLogging
-  protected lazy val playUrlObj = url(playUrl)
-
   def or(fallback: Ai) = if (currentHealth) this else fallback
 
   def currentPing = ping
-  def currentHealth = ping.fold(_ < pingAlert, false)
+  def currentHealth = isHealthy(ping)
 
-  val diagnose: IO[Unit] = for {
-    p ← tryPing
-    _ ← p.fold(_ < pingAlert, false).fold(
-      currentHealth.fold(io(), putStrLn("remote AI is up, ping = " + p)),
-      putStrLn("remote AI is down, ping = " + p))
-    _ ← io { ping = p }
-  } yield ()
+  def diagnose: Unit = tryPing onComplete {
+    case Left(e) ⇒ {
+      println("remote AI error: " + e.getMessage)
+      changePing(none)
+    }
+    case Right(p) ⇒ changePing(p.some)
+  }
+
+  private def changePing(p: Option[Int]) = {
+    if (isHealthy(p) && !currentHealth)
+      println("remote AI is up, ping = " + p)
+    else if (!isHealthy(p) && currentHealth)
+      println("remote AI is down, ping = " + p)
+    ping = p
+  }
+
+  private def isHealthy(p: Option[Int]) = p.fold(isFast, false)
+
+  private def isFast(p: Int) = p < pingAlert
 }

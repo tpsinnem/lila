@@ -8,16 +8,17 @@ import game.DbGame
 import analyse.Analysis
 
 import scalaz.effects._
-import dispatch.{ url }
 import akka.dispatch.Future
+import akka.util.duration._
 import play.api.Play.current
 import play.api.libs.concurrent._
+import play.api.libs.ws.WS
 
 final class Client(
     val playUrl: String,
     analyseUrl: String) extends ai.Client with Stockfish {
 
-  def play(dbGame: DbGame, initialFen: Option[String]): IO[Valid[(Game, Move)]] = {
+  def play(dbGame: DbGame, initialFen: Option[String]): Future[Valid[(Game, Move)]] = {
     fetchMove(dbGame.pgn, initialFen | "", dbGame.aiLevel | 1) map {
       applyMove(dbGame, _)
     }
@@ -25,40 +26,38 @@ final class Client(
 
   def analyse(dbGame: DbGame, initialFen: Option[String]): Future[Valid[Analysis]] =
     fetchAnalyse(dbGame.pgn, initialFen | "") map {
-      _ flatMap { Analysis(_, true) }
+      Analysis(_, true)
+    } recover {
+      case e ⇒ !![Analysis](e.getMessage)
     }
 
-  private lazy val analyseUrlObj = url(analyseUrl)
+  protected lazy val tryPing: Future[Int] = nowMillis |> { start ⇒
+    fetchMove(pgn = "", initialFen = "", level = 1) map {
+      case move if UciMove(move).isDefined ⇒ (nowMillis - start).toInt
+    }
+  }
 
-  protected lazy val tryPing: IO[Option[Int]] = for {
-    start ← io(nowMillis)
-    received ← fetchMove(
-      pgn = "",
-      initialFen = "",
-      level = 1
-    ).catchLeft map (_ match {
-        case Right(move) ⇒ UciMove(move).isDefined
-        case _           ⇒ false
-      })
-    delay ← io(nowMillis - start)
-  } yield received option delay.toInt
-
-  private def fetchMove(pgn: String, initialFen: String, level: Int): IO[String] = io {
-    http(playUrlObj <<? Map(
+  private def fetchMove(pgn: String, initialFen: String, level: Int): Future[String] =
+    toAkkaFuture(WS.url(playUrl).withQueryString(
       "pgn" -> pgn,
       "initialFen" -> initialFen,
       "level" -> level.toString
-    ) as_str)
-  }
+    ).get() map (_.body))
 
-  private def fetchAnalyse(pgn: String, initialFen: String): Future[Valid[String]] = Future {
-    unsafe {
-      http(analyseUrlObj <<? Map(
-        "pgn" -> pgn,
-        "initialFen" -> initialFen
-      ) as_str)
-    }
-  }
+  private def fetchAnalyse(pgn: String, initialFen: String): Future[String] =
+    toAkkaFuture(WS.url(analyseUrl).withQueryString(
+      "pgn" -> pgn,
+      "initialFen" -> initialFen
+    ).get() map (_.body))
 
   private implicit val executor = Akka.system.dispatcher
+
+  private def toAkkaFuture[A](promise: Promise[A]): Future[A] = {
+    val p = akka.dispatch.Promise[A]()
+    promise extend1 {
+      case Redeemed(value) ⇒ p success value
+      case Thrown(exn)     ⇒ p failure exn
+    }
+    p.future
+  }
 }
