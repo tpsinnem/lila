@@ -11,24 +11,31 @@ final class Cached(
 
   import Cached._
 
-  def nbGames: Int = memo(NbGames)
-  def nbMates: Int = memo(NbMates)
-  def nbPopular: Int = memo(NbPopular)
+  def nbGames: Int = fastMemo(NbGames)
+  def nbMates: Int = fastMemo(NbMates)
+  def nbPopular: Int = fastMemo(NbPopular)
+  def yearGames: List[Int] = slowMemo(YearGames)
 
-  private val memo = ActorMemo(loadFromDb, nbTtl, 5.seconds)
-
-  private def loadFromDb(key: Key) = key match {
+  private val fastMemo = ActorMemo(fastFromDb, nbTtl, 5.seconds)
+  private def fastFromDb(key: FastKey) = key match {
     case NbGames ⇒ gameRepo.count(_.all).unsafePerformIO
     case NbMates ⇒ gameRepo.count(_.mate).unsafePerformIO
     case NbPopular ⇒ gameRepo.count(_.popular).unsafePerformIO
+  }
+
+  private val slowMemo = ActorMemo(slowFromDb, nbTtl, 5.seconds)
+  private def slowFromDb(key: SlowKey) = key match {
+    case YearGames ⇒ gameRepo.nbPerDay(365).unsafePerformIO
   }
 }
 
 object Cached {
 
-  sealed trait Key
+  sealed trait FastKey
+  case object NbGames extends FastKey
+  case object NbMates extends FastKey
+  case object NbPopular extends FastKey
 
-  case object NbGames extends Key
-  case object NbMates extends Key
-  case object NbPopular extends Key
+  sealed trait SlowKey
+  case object YearGames extends SlowKey
 }
