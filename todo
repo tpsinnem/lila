@@ -28,3 +28,4 @@ analysis not the fastest checkmate, but no best move? http://en.lichess.org/anal
 analysis missing last move (and 2 moves in chart)
 elo chart average line is late
 bookmarkers overflow http://en.lichess.org/508d7dfc
+stockfish timeout -> restart
