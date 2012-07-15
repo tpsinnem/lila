@@ -8,11 +8,18 @@ import akka.actor.{ Props, Actor, ActorRef, FSM ⇒ AkkaFSM, LoggingFSM }
 import scalaz.effects._
 
 final class AnalyseFSM(
-  processBuilder: (String ⇒ Unit, String ⇒ Unit) ⇒ Process,
+  processBuilder: Process.Builder,
   config: AnalyseConfig)
     extends Actor with LoggingFSM[State, Data] {
 
-  val process = processBuilder(out ⇒ self ! Out(out), err ⇒ self ! Err(err))
+  var process: Process = _
+
+  override def preStart() {
+    process = processBuilder(
+      out ⇒ self ! Out(out),
+      err ⇒ self ! Err(err),
+      msg ⇒ !isNoise(msg))
+  }
 
   startWith(Starting, Todo())
 
@@ -50,13 +57,12 @@ final class AnalyseFSM(
       )
   }
   whenUnhandled {
-    case Event(analyse: Analyse, data) ⇒
-      nextAnalyse(data enqueue Task(analyse, sender))
-    case Event(GetQueueSize, data)                       ⇒ 
-      sender ! QueueSize(data.queue.size); stay
+    case Event(analyse: Analyse, data)  ⇒ nextAnalyse(data enqueue Task(analyse, sender))
+    case Event(GetQueueSize, data)      ⇒ sender ! QueueSize(data.size); stay
     case Event(Out(t), _) if isNoise(t) ⇒ stay
     case Event(Out(t), _)               ⇒ { log.warning(t); stay }
     case Event(Err(t), _)               ⇒ { log.error(t); stay }
+    case Event(e @ RebootException, _)  ⇒ throw e
   }
 
   def nextAnalyse(data: Data) = data match {
@@ -86,7 +92,8 @@ final class AnalyseFSM(
   def isNoise(t: String) =
     t.isEmpty || (t startsWith "id ") || (t startsWith "info ") || (t startsWith "option name ")
 
-  def onTermination() {
+  override def postStop() {
     process.destroy()
+    process = null
   }
 }
