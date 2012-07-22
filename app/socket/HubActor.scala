@@ -16,20 +16,26 @@ abstract class HubActor[M <: SocketMember](uidTimeout: Int) extends Actor {
   // generic message handler
   def receiveGeneric: Receive = {
 
-    case Ping(uid)           ⇒ ping(uid)
+    case Ping(uid)               ⇒ ping(uid)
 
-    case Broom               ⇒ broom()
+    case Broom                   ⇒ broom()
 
     // when a member quits
-    case Quit(uid)           ⇒ quit(uid)
+    case Quit(uid)               ⇒ quit(uid)
 
-    case GetNbMembers        ⇒ sender ! members.size
+    case GetNbMembers            ⇒ sender ! members.size
 
-    case NbMembers(nb)       ⇒ pong = makePong(nb)
+    case NbMembers(nb)           ⇒ pong = makePong(nb)
 
-    case GetUsernames        ⇒ sender ! usernames
+    case GetUsernames            ⇒ sender ! usernames
 
-    case SendTo(userId, msg) ⇒ sendTo(userId, msg)
+    case LiveGames(uid, gameIds) ⇒ registerLiveGames(uid, gameIds)
+
+    case Fen(gameId, fen)        ⇒ notifyFen(gameId, fen)
+
+    case SendTo(userId, msg)     ⇒ sendTo(userId, msg)
+
+    case Resync(uid)             ⇒ resync(uid)
   }
 
   def receive = receiveSpecific orElse receiveGeneric
@@ -46,7 +52,7 @@ abstract class HubActor[M <: SocketMember](uidTimeout: Int) extends Actor {
 
   def ping(uid: String) {
     setAlive(uid)
-    member(uid) foreach (_.channel push pong)
+    withMember(uid)(_.channel push pong)
   }
 
   def sendTo(userId: String, msg: JsObject) {
@@ -58,7 +64,7 @@ abstract class HubActor[M <: SocketMember](uidTimeout: Int) extends Actor {
   }
 
   def eject(uid: String) {
-    members get uid foreach { member ⇒
+    withMember(uid) { member ⇒
       member.channel.end()
       quit(uid)
     }
@@ -69,9 +75,11 @@ abstract class HubActor[M <: SocketMember](uidTimeout: Int) extends Actor {
   }
 
   def resync(member: M) {
-    member.channel push JsObject(Seq(
-      "t" -> JsString("resync")
-    ))
+    member.channel push makeMessage("resync", JsNull)
+  }
+
+  def resync(uid: String) {
+    withMember(uid)(resync)
   }
 
   def addMember(uid: String, member: M) {
@@ -86,12 +94,25 @@ abstract class HubActor[M <: SocketMember](uidTimeout: Int) extends Actor {
 
   def uids = members.keys
 
-  def member(uid: String): Option[M] = members get uid
-
   def memberByUserId(userId: String): Option[M] = {
     val someId = Some(userId)
     members.values find (_.userId == someId)
   }
 
   def usernames: Iterable[String] = members.values.map(_.username).flatten
+
+  def notifyFen(gameId: String, fen: String) {
+    val msg = makeMessage("fen", JsObject(Seq(
+      "id" -> JsString(gameId),
+      "fen" -> JsString(fen))))
+    members.values filter (_ liveGames gameId) foreach (_.channel push msg)
+  }
+
+  def registerLiveGames(uid: String, ids: List[String]) {
+    withMember(uid)(_ addLiveGames ids)
+  }
+
+  def withMember(uid: String)(f: M => Unit) {
+    members get uid foreach f
+  }
 }

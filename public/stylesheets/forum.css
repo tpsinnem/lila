@@ -6,7 +6,8 @@ a.forum_feed_link {
   float: right;
 }
 
-.metas .delete {
+.metas .delete,
+.metas .ipban {
   margin-left: 1em;
 }
 .forum_topics_list .delete {
@@ -85,8 +86,6 @@ ol.crumbs li:first-child {
 
 #lichess_forum h1 {
   font-size: 1.4em;
-  color: #666;
-  font-weight: normal;
   margin-bottom: 0.5em;
 }
 .forum_baseline {
@@ -149,7 +148,6 @@ div.topicReply {
 }
 .postNewTitle {
   font-size: 1.5em;
-  color: #444;
   font-style: italic;
 }
 

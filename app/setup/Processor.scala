@@ -18,7 +18,7 @@ final class Processor(
     gameRepo: GameRepo,
     fisherman: Fisherman,
     timelinePush: DbGame ⇒ IO[Unit],
-    ai: () ⇒ Ai) {
+    ai: () ⇒ Ai) extends core.Futuristic {
 
   def ai(config: AiConfig)(implicit ctx: Context): IO[Pov] = for {
     _ ← ctx.me.fold(
@@ -35,7 +35,10 @@ final class Processor(
     pov2 ← game.player.isHuman.fold(
       io(pov),
       for {
-        aiResult ← ai()(game) map (_.err)
+        initialFen ← game.variant.standard.fold(
+          io(none[String]),
+          gameRepo initialFen game.id)
+        aiResult ← { ai().play(game, initialFen) map (_.err) }.toIo
         (newChessGame, move) = aiResult
         progress = game.update(newChessGame, move)
         _ ← gameRepo save progress

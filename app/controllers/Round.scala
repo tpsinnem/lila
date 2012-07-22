@@ -13,29 +13,34 @@ import play.api.libs.iteratee._
 import play.api.templates.Html
 import scalaz.effects._
 
-object Round extends LilaController with TheftPrevention {
+object Round extends LilaController with TheftPrevention with RoundEventPerformer {
 
   def gameRepo = env.game.gameRepo
   def socket = env.round.socket
   def hand = env.round.hand
   def messenger = env.round.messenger
   def rematcher = env.setup.rematcher
-  def joiner = env.setup.friendJoiner
   def bookmarkApi = env.bookmark.api
   def userRepo = env.user.userRepo
+  def analyser = env.analyse.analyser
 
   def websocketWatcher(gameId: String, color: String) = WebSocket.async[JsValue] { req ⇒
     implicit val ctx = reqToCtx(req)
     socket.joinWatcher(
-      gameId, color, getInt("version"), get("uid"), ctx.me map (_.username)
-    ).unsafePerformIO
+      gameId,
+      color,
+      getInt("version"),
+      get("uid"),
+      ctx.me).unsafePerformIO
   }
 
   def websocketPlayer(fullId: String) = WebSocket.async[JsValue] { req ⇒
     implicit val ctx = reqToCtx(req)
     socket.joinPlayer(
-      fullId, getInt("version"), get("uid"), ctx.me map (_.username)
-    ).unsafePerformIO
+      fullId,
+      getInt("version"),
+      get("uid"),
+      ctx.me).unsafePerformIO
   }
 
   def player(fullId: String) = Open { implicit ctx ⇒
@@ -47,13 +52,15 @@ object Round extends LilaController with TheftPrevention {
           engine ← pov.opponent.userId.fold(
             u ⇒ userRepo isEngine u,
             io(false))
+          analysed ← analyser has pov.gameId
         } yield PreventTheft(pov) {
           Ok(html.round.player(
             pov,
             version(pov.gameId),
             engine,
             roomHtml map { Html(_) },
-            bookmarkers))
+            bookmarkers,
+            analysed))
         },
         io(Redirect(routes.Setup.await(fullId)))
       )
@@ -62,8 +69,14 @@ object Round extends LilaController with TheftPrevention {
 
   def watcher(gameId: String, color: String) = Open { implicit ctx ⇒
     IOptionIOResult(gameRepo.pov(gameId, color)) { pov ⇒
-      pov.game.started.fold(watch(pov), join(pov))
+      pov.game.started.fold(watch _, join _)(pov)
     }
+  }
+
+  private def join(pov: Pov)(implicit ctx: Context): IO[Result] = io {
+    Ok(html.setup.join(
+      pov, version(pov.gameId), env.setup.friendConfigMemo get pov.game.id
+    ))
   }
 
   private def watch(pov: Pov)(implicit ctx: Context): IO[Result] = for {
@@ -72,16 +85,8 @@ object Round extends LilaController with TheftPrevention {
       io(Nil)
     )
     roomHtml ← messenger renderWatcher pov.game
-  } yield Ok(html.round.watcher(pov, version(pov.gameId), Html(roomHtml), bookmarkers))
-
-  private def join(pov: Pov)(implicit ctx: Context): IO[Result] =
-    joiner(pov.game, ctx.me).fold(
-      err ⇒ putFailures(err) flatMap (_ ⇒ watch(pov)),
-      _ flatMap {
-        case (p, events) ⇒ performEvents(p.gameId)(events) map { _ ⇒
-          Redirect(routes.Round.player(p.fullId))
-        }
-      })
+    analysed ← analyser has pov.gameId
+  } yield Ok(html.round.watcher(pov, version(pov.gameId), Html(roomHtml), bookmarkers, analysed))
 
   def abort(fullId: String) = performAndRedirect(fullId, hand.abort)
   def resign(fullId: String) = performAndRedirect(fullId, hand.resign)
@@ -136,22 +141,6 @@ object Round extends LilaController with TheftPrevention {
       )
     })
   }
-
-  private type IOValidEvents = IO[Valid[List[Event]]]
-
-  private def performAndRedirect(fullId: String, op: String ⇒ IOValidEvents) =
-    Action {
-      perform(fullId, op).unsafePerformIO
-      Redirect(routes.Round.player(fullId))
-    }
-
-  private def perform(fullId: String, op: String ⇒ IOValidEvents): IO[Unit] =
-    op(fullId) flatMap { validEvents ⇒
-      validEvents.fold(putFailures, performEvents(fullId))
-    }
-
-  private def performEvents(fullId: String)(events: List[Event]): IO[Unit] =
-    env.round.socket.send(DbGame takeGameId fullId, events)
 
   private def version(gameId: String): Int = socket blockingVersion gameId
 }

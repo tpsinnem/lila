@@ -114,6 +114,9 @@ div.hooks td {
   height: 64px;
   margin: 0;
 }
+div.hooks a {
+  color: #666;
+}
 div.hooks tr:last-child td {
   border-bottom: none;
 }
@@ -175,14 +178,15 @@ div.hooks a.cancel {
 div.hooks a.join {
   background: url(../images/play32.png) +16px no-repeat;
 }
-div.hooks tr.my_hook {
-  color: #405090;
-  background: #c9dbee;
-}
 
 div.hooks a.user_link {
   background: transparent;
   padding-left: 0;
+}
+
+div.featured_game div.vstext {
+  margin-top: 0.7em;
+  text-align: center;
 }
 
 div.undertable {
@@ -209,7 +213,7 @@ div.undertable_inner {
   border: 1px solid #ccc;
   border-top: 0;
   border-radius: 0 0 4px 4px;
-  height: 163px;
+  height: 204px;
   overflow:hidden;
 }
 div.undertable a.user_link {
@@ -243,9 +247,6 @@ div.lichess_bot a.watch {
   background: url(../images/eye.png) top left no-repeat;
   opacity: 0.4;
 }
-div.lichess_bot tr:hover td {
-  background: #fffaea;
-}
 div.lichess_bot tr:hover a.watch {
   opacity: 1;
 }
@@ -262,4 +263,9 @@ div.new_posts li span {
   font-weight: bold;
   margin-right: 6px;
   color: #aaa;
+}
+div.lichess_overboard.joining input.submit {
+  font-size: 1.2em;
+  margin-top: 1em;
+  padding: 0.6em 1em;
 }

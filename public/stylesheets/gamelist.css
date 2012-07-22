@@ -1,11 +1,7 @@
-div.current_games_box {
-  width: 638px;
-}
-
 div.game_row {
   display: block;
   padding: 1.4em 20px;
-  height: 190px;
+  height: 224px;
   line-height: 1.6em;
   border-bottom: 1px solid #eaeaea;
   position: relative;
@@ -47,28 +43,25 @@ div.game_row .bookmark {
 div.game_list.realtime {
   margin-top: 1.4em;
 }
-div.game_list_inner > div {
+div.game_list.realtime > div {
   float: left;
-  margin: 0px 10px 10px 10px;
+  margin: 0px 12px 12px 12px;
 }
-div.game_list_inner div.vstext {
+div.game_list.realtime div.vstext {
   font-size: 11.5px;
   text-align: center;
-  width: 192px;
+  width: 224px;
   overflow: hidden;
   white-space: nowrap;
   margin-top: 5px;
 }
 
 .mini_board {
-  width: 192px;
-  height: 192px;
+  width: 224px;
+  height: 224px;
   position: relative;
   display: block;
-  box-shadow:0 0 5px #444;
-}
-.mini_board.highlight {
-  box-shadow:0 0 5px #d85000;
+  box-shadow:0 0 5px #666;
 }
 div.all_games a.mini_board {
   float: left;
@@ -77,8 +70,8 @@ div.all_games a.mini_board {
 
 div.lmcs {
   position: absolute;
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
 }
 
 div.lmcs.white {
@@ -90,46 +83,46 @@ div.lmcs.black {
 
 div.lcmp {
   position: absolute;
-  width: 24px;
-  height: 24px;
-  background-image: url(../images/sprite_mini.png);
+  width: 28px;
+  height: 28px;
+  background-image: url(../images/sprite_mini2.png);
 }
 
 div.lcmp.pawn.white{
   background-position: 0 0;
 }
 div.lcmp.bishop.white{
-  background-position: -24px 0;
+  background-position: -28px 0;
 }
 div.lcmp.knight.white{
-  background-position: -48px 0;
+  background-position: -56px 0;
 }
 div.lcmp.rook.white{
-  background-position: -72px 0;
+  background-position: -84px 0;
 }
 div.lcmp.queen.white{
-  background-position: -96px 0;
+  background-position: -112px 0;
 }
 div.lcmp.king.white{
-  background-position: -120px 0;
+  background-position: -140px 0;
 }
 
 div.lcmp.pawn.black{
   background-position: 0px bottom;
 }
 div.lcmp.bishop.black{
-  background-position: -24px bottom;
+  background-position: -28px bottom;
 }
 div.lcmp.knight.black{
-  background-position: -48px bottom;
+  background-position: -56px bottom;
 }
 div.lcmp.rook.black{
-  background-position: -72px bottom;
+  background-position: -84px bottom;
 }
 div.lcmp.queen.black{
-  background-position: -96px bottom;
+  background-position: -112px bottom;
 }
 div.lcmp.king.black{
-  background-position: -120px bottom;
+  background-position: -140px bottom;
 }
 

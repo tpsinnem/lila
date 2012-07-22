@@ -52,10 +52,6 @@ $.websocket.prototype = {
       var m = JSON.parse(e.data);
       self.debug(m);
       if (m.t == "n") { self.pong(); }
-      if (m.t == "resync") { 
-        location.reload();
-        return;
-      }
       if (m.t == "batch") {
         $(m.d || []).each(function() { self.handle(this); });
       } else {
@@ -82,7 +78,6 @@ $.websocket.prototype = {
   },
   schedulePing: function(delay) {
     var self = this;
-    //self.debug("schedule ping in " + delay + " ms");
     clearTimeout(self.pingSchedule);
     self.pingSchedule = setTimeout(function() { 
       self.pingNow(); 
@@ -92,7 +87,6 @@ $.websocket.prototype = {
     var self = this;
     clearTimeout(self.pingSchedule);
     clearTimeout(self.connectSchedule);
-    //console.debug("ping now");
     try {
       self.debug("ping " + self.pingData());
       self.ws.send(self.pingData());
@@ -104,7 +98,6 @@ $.websocket.prototype = {
   },
   pong: function() {
     var self = this;
-    //self.debug("pong");
     clearTimeout(self.connectSchedule);
     self.schedulePing(self.options.pingDelay);
     self.currentLag = self.now() - self.lastPingTime;
@@ -130,6 +123,10 @@ $.websocket.prototype = {
       self.debug("set version " + self.version);
     }
     if (m.t) {
+      if (m.t == "resync") { 
+        location.reload();
+        return;
+      }
       var h = self.settings.events[m.t];
       if ($.isFunction(h)) h(m.d || null);
       else if(!self.options.ignoreUnknownMessages) {

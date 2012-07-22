@@ -11,7 +11,7 @@ import com.mongodb.casbah.MongoCollection
 
 import timeline.Entry
 import user.{ User, UserRepo }
-import game.DbGame
+import game.{ DbGame, Featured }
 import round.{ Socket ⇒ RoundSocket, Messenger ⇒ RoundMessenger }
 import security.Flood
 import core.Settings
@@ -22,6 +22,7 @@ final class LobbyEnv(
     mongodb: String ⇒ MongoCollection,
     userRepo: UserRepo,
     getGame: String => IO[Option[DbGame]],
+    featured: Featured,
     roundSocket: RoundSocket,
     roundMessenger: RoundMessenger,
     flood: Flood) {
@@ -51,10 +52,10 @@ final class LobbyEnv(
     socket = socket)
 
   lazy val messageRepo = new MessageRepo(
-    collection = mongodb(MongoCollectionMessage),
+    collection = mongodb(LobbyCollectionMessage),
     max = LobbyMessageMax)
 
-  lazy val hookRepo = new HookRepo(mongodb(MongoCollectionHook))
+  lazy val hookRepo = new HookRepo(mongodb(LobbyCollectionHook))
 
   lazy val hookMemo = new HookMemo(timeout = MemoHookTimeout)
 
@@ -63,5 +64,6 @@ final class LobbyEnv(
     history = history,
     hookRepo = hookRepo,
     getGame = getGame,
-    messageRepo = messageRepo)
+    messageRepo = messageRepo,
+    featured = featured)
 }

@@ -5,7 +5,7 @@ import round.{ Event, Progress }
 import user.User
 import chess.{ History ⇒ ChessHistory, Role, Board, Move, Pos, Game, Clock, Status, Color, Piece, Variant, Mode }
 import Color._
-import chess.format.{ PgnReader, Fen }
+import chess.format.{ pgn => chessPgn }
 import chess.Pos.piotr
 import chess.Role.forsyth
 
@@ -95,7 +95,7 @@ case class DbGame(
     }
 
     Game(
-      board = Board(pieces, toChessHistory),
+      board = Board(pieces, toChessHistory, variant),
       player = Color(0 == turns % 2),
       pgnMoves = pgn,
       clock = clock,
@@ -168,10 +168,15 @@ case class DbGame(
   }
 
   def rewind(initialFen: Option[String]): Valid[Progress] = {
-    PgnReader.withSans(
+    chessPgn.Reader.withSans(
       pgn = pgn,
       op = _.init,
-      tags = initialFen.fold(fen ⇒ List(Fen(fen)), Nil)
+      tags = initialFen.fold(
+        fen ⇒ List(
+          chessPgn.Tag(_.FEN, fen),
+          chessPgn.Tag(_.Variant, variant.name)
+        ), 
+        Nil)
     ) map { replay ⇒
         val rewindedGame = replay.game
         val rewindedHistory = rewindedGame.board.history
@@ -226,6 +231,8 @@ case class DbGame(
   def playable = status < Status.Aborted
 
   def playableBy(p: DbPlayer) = playable && turnOf(p)
+
+  def playableBy(c: Color) = playable && turnOf(player(c))
 
   def aiLevel: Option[Int] = players find (_.isAi) flatMap (_.aiLevel)
 

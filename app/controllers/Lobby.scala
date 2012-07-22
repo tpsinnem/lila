@@ -7,9 +7,11 @@ import views._
 
 import play.api.mvc._
 import play.api.libs.json.JsValue
+import play.api.libs.concurrent._
+import akka.dispatch.Future
 import scalaz.effects._
 
-object Lobby extends LilaController {
+object Lobby extends LilaController with Results {
 
   def preloader = env.lobby.preloader
   def hookRepo = env.lobby.hookRepo
@@ -18,26 +20,38 @@ object Lobby extends LilaController {
   def forumRecent = env.forum.recent
   def timelineRecent = env.timeline.entryRepo.recent
   def messageRepo = env.lobby.messageRepo
+  def featured = env.game.featured
 
   val home = Open { implicit ctx ⇒
-    renderHome(none).fold(identity, Ok(_))
+    Async {
+      renderHome(none, Ok)
+    }
   }
 
   def handleNotFound(req: RequestHeader): Result =
     handleNotFound(reqToCtx(req))
 
   def handleNotFound(implicit ctx: Context): Result =
-    renderHome(none).fold(identity, NotFound(_))
+    Async {
+      renderHome(none, NotFound)
+    }
 
-  private def renderHome(myHook: Option[Hook])(implicit ctx: Context) = preloader(
-    auth = ctx.isAuth,
-    chat = ctx.canSeeChat,
-    myHook = myHook,
-    timeline = timelineRecent
-  ).unsafePerformIO.bimap(
-      url ⇒ Redirect(url),
-      preload ⇒ html.lobby.home(toJson(preload), myHook, forumRecent(ctx.me))
-    )
+  private def renderHome[A](myHook: Option[Hook], status: Status)(implicit ctx: Context): Promise[Result] =
+    preloader(
+      auth = ctx.isAuth,
+      chat = ctx.canSeeChat,
+      myHook = myHook,
+      timeline = timelineRecent,
+      posts = forumRecent(ctx.me)
+    ).map(_.fold(
+        url ⇒ Redirect(url), {
+          case (preload, posts, featured) ⇒ status(html.lobby.home(
+            toJson(preload),
+            myHook,
+            posts,
+            featured))
+        }
+      )).asPromise
 
   def socket = WebSocket.async[JsValue] { implicit req ⇒
     implicit val ctx = reqToCtx(req)
@@ -50,9 +64,14 @@ object Lobby extends LilaController {
   }
 
   def hook(ownerId: String) = Open { implicit ctx ⇒
-    hookRepo.ownedHook(ownerId).unsafePerformIO.fold(
-      hook ⇒ renderHome(hook.some).fold(identity, Ok(_)),
-      Redirect(routes.Lobby.home))
+    Async {
+      hookRepo.ownedHook(ownerId).unsafePerformIO.fold(
+        hook ⇒ renderHome(hook.some, Ok),
+        Promise.pure {
+          Redirect(routes.Lobby.home)
+        }
+      )
+    }
   }
 
   def join(hookId: String) = Open { implicit ctx ⇒

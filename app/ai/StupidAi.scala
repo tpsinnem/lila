@@ -5,10 +5,11 @@ import chess.{ Game, Move }
 import game.DbGame
 
 import scalaz.effects._
+import akka.dispatch.Future
 
-final class StupidAi extends Ai {
+final class StupidAi extends Ai with core.Futuristic {
 
-  def apply(dbGame: DbGame): IO[Valid[(Game, Move)]] = io {
+  def play(dbGame: DbGame, initialFen: Option[String]): Future[Valid[(Game, Move)]] = Future {
 
     val game = dbGame.toChess
 
@@ -19,4 +20,7 @@ final class StupidAi extends Ai {
       newChessGameAndMove ← game(orig, dest)
     } yield newChessGameAndMove
   }
+
+  def analyse(dbGame: DbGame, initialFen: Option[String]) = 
+    throw new RuntimeException("Stupid analysis is not implemented")
 }

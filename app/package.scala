@@ -4,8 +4,9 @@ import play.api.libs.json.JsValue
 import play.api.libs.concurrent.Promise
 import play.api.libs.iteratee.{ Iteratee, Enumerator }
 import play.api.libs.iteratee.Concurrent.Channel
+import play.api.Play.current
 
-import com.novus.salat._
+import com.novus.salat.{ Context, TypeHintFrequency, StringTypeHintStrategy }
 import com.mongodb.casbah.commons.conversions.scala.RegisterJodaTimeConversionHelpers
 import scalaz.effects.{ io, IO }
 
@@ -26,14 +27,13 @@ package object lila
 
   // custom salat context
   implicit val customSalatContext = new Context {
-    val name = "Lila System Context"
-    override val typeHintStrategy = StringTypeHintStrategy(when = TypeHintFrequency.Never)
+    val name = "Lila Context"
+    override val typeHintStrategy = StringTypeHintStrategy(
+      when = TypeHintFrequency.Never)
   }
   RegisterJodaTimeConversionHelpers()
 
-  def !!(msg: String) = msg.failNel
-
-  val GameNotFound = !!("Game not found")
+  def !![A](msg: String) = msg.failNel[A]
 
   def nowMillis: Double = System.currentTimeMillis
   def nowSeconds: Int = (nowMillis / 1000).toInt
@@ -55,6 +55,12 @@ package object lila
   catch {
     case e: NumberFormatException ⇒ None
   }
+
+  def intBox(in: Range.Inclusive)(v: Int): Int =
+    math.max(in.start, math.min(v, in.end)) 
+
+  def floatBox(in: Range.Inclusive)(v: Float): Float =
+    math.max(in.start, math.min(v, in.end)) 
 
   def printToFile(f: java.io.File)(op: java.io.PrintWriter ⇒ Unit): IO[Unit] = io {
     val p = new java.io.PrintWriter(f)

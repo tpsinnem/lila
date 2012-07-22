@@ -2,10 +2,13 @@ package lila
 package core
 
 import com.typesafe.config.Config
+import scalaz.{ Success, Failure }
 
 final class Settings(config: Config) {
 
   import config._
+
+  val ConfigName = getString("config_name")
 
   val SiteUidTimeout = millis("site.uid.timeout")
 
@@ -16,22 +19,36 @@ final class Settings(config: Config) {
   val I18nUpstreamDomain = getString("i18n.upstream.domain")
   val I18nHideCallsCookieName = getString("i18n.hide_calls.cookie.name")
   val I18nHideCallsCookieMaxAge = getInt("i18n.hide_calls.cookie.max_age")
+  val I18nCollectionTranslation = getString("i18n.collection.translation")
 
-  val GameMessageLifetime = millis("game.message.lifetime")
-  val GameUidTimeout = millis("game.uid.timeout")
-  val GameHubTimeout = millis("game.hub.timeout")
-  val GamePlayerTimeout = millis("game.player.timeout")
-  val GameAnimationDelay = millis("game.animation.delay")
   val GameCachedNbTtl = millis("game.cached.nb.ttl")
   val GamePaginatorMaxPerPage = getInt("game.paginator.max_per_page")
+  val GameCollectionGame = getString("game.collection.game")
+
+  val RoundMessageLifetime = millis("round.message.lifetime")
+  val RoundUidTimeout = millis("round.uid.timeout")
+  val RoundHubTimeout = millis("round.hub.timeout")
+  val RoundPlayerTimeout = millis("round.player.timeout")
+  val RoundAnimationDelay = millis("round.animation.delay")
+  val RoundMoretime = seconds("round.moretime")
+  val RoundCollectionRoom = getString("round.collection.room")
+  val RoundCollectionWatcherRoom = getString("round.collection.watcher_room")
+
+  val AnalyseCachedNbTtl = millis("analyse.cached.nb.ttl")
 
   val UserPaginatorMaxPerPage = getInt("user.paginator.max_per_page")
   val UserEloUpdaterFloor = getInt("user.elo_updater.floor")
   val UserCachedNbTtl = millis("user.cached.nb.ttl")
+  val UserCollectionUser = getString("user.collection.user")
+  val UserCollectionHistory = getString("user.collection.history")
+  val UserCollectionConfig = getString("user.collection.config")
 
   val ForumTopicMaxPerPage = getInt("forum.topic.max_per_page")
   val ForumPostMaxPerPage = getInt("forum.post.max_per_page")
   val ForumRecentTimeout = millis("forum.recent.timeout")
+  val ForumCollectionCateg = getString("forum.collection.categ")
+  val ForumCollectionTopic = getString("forum.collection.topic")
+  val ForumCollectionPost = getString("forum.collection.post")
 
   val MessageThreadMaxPerPage = getInt("message.thread.max_per_page")
 
@@ -40,21 +57,36 @@ final class Settings(config: Config) {
   val LobbyEntryMax = getInt("lobby.entry.max")
   val LobbyMessageMax = getInt("lobby.message.max")
   val LobbyMessageLifetime = millis("lobby.message.lifetime")
+  val LobbyCollectionHook = getString("lobby.collection.hook")
+  val LobbyCollectionEntry = getString("lobby.collection.entry")
+  val LobbyCollectionMessage = getString("lobby.collection.message")
 
   val MemoHookTimeout = millis("memo.hook.timeout")
   val MemoUsernameTimeout = millis("memo.username.timeout")
 
-  val MoretimeSeconds = seconds("moretime.seconds")
-
   val FinisherLockTimeout = millis("memo.finisher_lock.timeout")
 
-  val AiChoice = getString("ai.use")
+  sealed trait AiEngine
+  case object AiStockfish extends AiEngine
+  case object AiStupid extends AiEngine
+
+  val AiChoice: AiEngine = getString("ai.use") match {
+    case "stockfish" ⇒ AiStockfish
+    case _           ⇒ AiStupid
+  }
+
   val AiServerMode = getBoolean("ai.server")
-  val AiRemoteUrl = getString("ai.remote.url")
-  val AiCraftyExecPath = getString("ai.crafty.exec_path")
-  val AiCraftyBookPath = Some(getString("ai.crafty.book_path")) filter ("" !=)
-  val AiRemote = "remote"
-  val AiCrafty = "crafty"
+  val AiClientMode = getBoolean("ai.client")
+
+  val AiStockfishExecPath = getString("ai.stockfish.exec_path")
+  val AiStockfishHashSize = getInt("ai.stockfish.hash_size")
+  val AiStockfishThreads = getInt("ai.stockfish.threads")
+
+  val AiStockfishPlayUrl = getString("ai.stockfish.play.url")
+  val AiStockfishPlayMaxMoveTime = getInt("ai.stockfish.play.movetime")
+
+  val AiStockfishAnalyseUrl = getString("ai.stockfish.analyse.url")
+  val AiStockfishAnalyseMoveTime = getInt("ai.stockfish.analyse.movetime")
 
   val MongoHost = getString("mongo.host")
   val MongoPort = getInt("mongo.port")
@@ -64,36 +96,41 @@ final class Settings(config: Config) {
   val MongoConnectTimeout = millis("mongo.connectTimeout")
   val MongoBlockingThreads = getInt("mongo.threadsAllowedToBlockForConnectionMultiplier")
 
-  val MongoCollectionGame = getString("mongo.collection.game")
-  val MongoCollectionHook = getString("mongo.collection.hook")
-  val MongoCollectionEntry = getString("mongo.collection.entry")
-  val MongoCollectionUser = getString("mongo.collection.user")
-  val MongoCollectionMessage = getString("mongo.collection.message")
-  val MongoCollectionHistory = getString("mongo.collection.history")
-  val MongoCollectionRoom = getString("mongo.collection.room")
-  val MongoCollectionWatcherRoom = getString("mongo.collection.watcher_room")
-  val MongoCollectionConfig = getString("mongo.collection.config")
-  val MongoCollectionCache = getString("mongo.collection.cache")
-  val MongoCollectionSecurity = getString("mongo.collection.security")
-  val MongoCollectionForumCateg = getString("mongo.collection.forum_categ")
-  val MongoCollectionForumTopic = getString("mongo.collection.forum_topic")
-  val MongoCollectionForumPost = getString("mongo.collection.forum_post")
-  val MongoCollectionMessageThread = getString("mongo.collection.message_thread")
-  val MongoCollectionWikiPage = getString("mongo.collection.wiki_page")
-  val MongoCollectionFirewall = getString("mongo.collection.firewall")
-  val MongoCollectionBookmark = getString("mongo.collection.bookmark")
-  val MongoCollectionTranslation = getString("mongo.collection.translation")
+  val AnalyseCollectionAnalysis = getString("analyse.collection.analysis")
 
   val FirewallEnabled = getBoolean("firewall.enabled")
   val FirewallBlockCookie = getString("firewall.block_cookie")
+  val FirewallCollectionFirewall = getString("firewall.collection.firewall")
+
+  val MessageCollectionThread = getString("message.collection.thread")
+
+  val WikiCollectionPage = getString("wiki.collection.page")
+  val WikiGitUrl = getString("wiki.git_url")
+
+  val BookmarkCollectionBookmark = getString("bookmark.collection.bookmark")
+
+  val CoreCollectionCache = getString("core.collection.cache")
+
+  val SecurityCollectionSecurity = getString("security.collection.security")
 
   val ActorReporting = "reporting"
   val ActorSiteHub = "site_hub"
-  val ActorGameHubMaster = "game_hub_master"
+  val ActorRoundHubMaster = "game_hub_master"
   val ActorLobbyHub = "lobby_hub"
   val ActorMonitorHub = "monitor_hub"
+
+  val ModlogCollectionModlog = getString("modlog.collection.modlog")
 
   private def millis(name: String): Int = getMilliseconds(name).toInt
 
   private def seconds(name: String): Int = millis(name) / 1000
+
+  implicit def validAny[A](a: A) = new {
+    def valid(f: A ⇒ Valid[A]): A = f(a) match {
+      case Success(a)   ⇒ a
+      case Failure(err) ⇒ throw new Invalid(err.shows)
+    }
+  }
+
+  private class Invalid(msg: String) extends Exception(msg)
 }

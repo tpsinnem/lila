@@ -6,17 +6,17 @@ import akka.pattern.ask
 import akka.util.duration._
 import akka.util.Timeout
 import akka.dispatch.Await
-
 import play.api.libs.json._
 import play.api.libs.iteratee._
 import play.api.libs.concurrent._
 import play.api.Play.current
-
 import scalaz.effects._
+import scalaz.{ Success, Failure }
 
 import game.{ Pov, PovRef }
+import user.User
 import chess.Color
-import socket.{ PingVersion, Quit }
+import socket.{ PingVersion, Quit, Resync }
 import socket.Util.connectionFail
 import security.Flood
 import implicits.RichJs._
@@ -37,10 +37,11 @@ final class Socket(
     hubMaster ? GetGameVersion(gameId) mapTo manifest[Int],
     timeoutDuration)
 
-  def send(progress: Progress): IO[Unit] =
+  def send(progress: Progress) {
     send(progress.game.id, progress.events)
+  }
 
-  def send(gameId: String, events: List[Event]): IO[Unit] = io {
+  def send(gameId: String, events: List[Event]) {
     hubMaster ! GameEvents(gameId, events)
   }
 
@@ -55,6 +56,7 @@ final class Socket(
       }
       case Some("talk") ⇒ for {
         txt ← e str "d"
+        if member.canChat
         if flood.allowMessage(uid, txt)
       } {
         val events = messenger.playerMessage(povRef, txt).unsafePerformIO
@@ -62,15 +64,16 @@ final class Socket(
       }
       case Some("move") ⇒ parseMove(e) foreach {
         case (orig, dest, prom, blur, lag) ⇒ {
-          hand.play(povRef, orig, dest, prom, blur, lag) flatMap { res ⇒
-            res.fold(
-              putFailures, {
-                case (events, fen) ⇒ for {
-                  _ ← send(povRef.gameId, events)
-                  _ ← moveNotifier(povRef.gameId, fen)
-                } yield ()
-              })
-          } unsafePerformIO
+          hand.play(povRef, orig, dest, prom, blur, lag) onSuccess {
+            case Failure(fs) ⇒ {
+              hub ! Resync(uid)
+              println(fs.shows)
+            }
+            case Success((events, fen)) ⇒ {
+              send(povRef.gameId, events)
+              moveNotifier(povRef.gameId, fen)
+            } 
+          }
         }
       }
       case Some("moretime") ⇒ (for {
@@ -90,6 +93,7 @@ final class Socket(
       }
       case Some("talk") ⇒ for {
         txt ← e str "d"
+        if member.canChat
         if flood.allowMessage(uid, txt)
       } {
         val events = messenger.watcherMessage(
@@ -106,15 +110,15 @@ final class Socket(
     colorName: String,
     version: Option[Int],
     uid: Option[String],
-    username: Option[String]): IO[SocketPromise] =
-    getWatcherPov(gameId, colorName) map { join(_, false, version, uid, username) }
+    user: Option[User]): IO[SocketPromise] =
+    getWatcherPov(gameId, colorName) map { join(_, false, version, uid, user) }
 
   def joinPlayer(
     fullId: String,
     version: Option[Int],
     uid: Option[String],
-    username: Option[String]): IO[SocketPromise] =
-    getPlayerPov(fullId) map { join(_, true, version, uid, username) }
+    user: Option[User]): IO[SocketPromise] =
+    getPlayerPov(fullId) map { join(_, true, version, uid, user) }
 
   private def parseMove(event: JsValue) = for {
     d ← event obj "d"
@@ -130,14 +134,14 @@ final class Socket(
     owner: Boolean,
     versionOption: Option[Int],
     uidOption: Option[String],
-    username: Option[String]): SocketPromise =
+    user: Option[User]): SocketPromise =
     ((povOption |@| uidOption |@| versionOption) apply {
       (pov: Pov, uid: String, version: Int) ⇒
         (for {
           hub ← hubMaster ? GetHub(pov.gameId) mapTo manifest[ActorRef]
           socket ← hub ? Join(
             uid = uid,
-            username = username,
+            user = user,
             version = version,
             color = pov.color,
             owner = owner

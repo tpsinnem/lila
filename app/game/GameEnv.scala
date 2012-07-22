@@ -11,7 +11,7 @@ final class GameEnv(
 
   import settings._
 
-  lazy val gameRepo = new GameRepo(mongodb(MongoCollectionGame))
+  lazy val gameRepo = new GameRepo(mongodb(GameCollectionGame))
 
   lazy val cached = new Cached(
     gameRepo = gameRepo,
@@ -21,6 +21,10 @@ final class GameEnv(
     gameRepo = gameRepo,
     cached = cached,
     maxPerPage = GamePaginatorMaxPerPage)
+
+  lazy val featured = new Featured(
+    gameRepo = gameRepo,
+    lobbyHubName = ActorLobbyHub)
 
   lazy val export = Export(gameRepo) _
 

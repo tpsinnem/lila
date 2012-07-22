@@ -4,14 +4,14 @@ package user
 import com.novus.salat._
 import com.novus.salat.dao._
 import com.mongodb.casbah.{ MongoCollection, WriteConcern }
-import com.mongodb.casbah.Imports._
+import com.mongodb.casbah.query.Imports._
 import scalaz.effects._
 import com.roundeights.hasher.Implicits._
 import org.joda.time.DateTime
 import ornicar.scalalib.OrnicarRandom
 
-class UserRepo(
-    collection: MongoCollection) extends SalatDAO[User, String](collection) {
+class UserRepo(collection: MongoCollection) 
+extends SalatDAO[User, String](collection) {
 
   val enabledQuery = DBObject("enabled" -> true)
   def byIdQuery(id: String): DBObject = DBObject("_id" -> normalize(id))
@@ -20,7 +20,7 @@ class UserRepo(
   def normalize(id: String) = id.toLowerCase
 
   def byId(id: String): IO[Option[User]] = io {
-    findOneByID(normalize(id))
+    findOneById(normalize(id))
   }
 
   def byIds(ids: Iterable[String]): IO[List[User]] = io {
@@ -34,7 +34,7 @@ class UserRepo(
   }
 
   def rank(user: User): IO[Int] = io {
-    count("elo" $gt user.elo).toInt + 1
+    count(DBObject("enabled" -> true) ++ ("elo" $gt user.elo)).toInt + 1
   }
 
   def setElo(id: String, elo: Int): IO[Unit] = io {
@@ -91,7 +91,7 @@ class UserRepo(
     userOption ← exists.fold(
       io(none),
       io {
-        val salt = OrnicarRandom nextAsciiString 32
+        val salt = OrnicarRandom nextString 32
         val obj = DBObject(
           "_id" -> normalize(username),
           "username" -> username,
@@ -142,6 +142,21 @@ class UserRepo(
   def enable(user: User) = updateIO(user)($set("enabled" -> true))
 
   def disable(user: User) = updateIO(user)($set("enabled" -> false))
+
+  def passwd(user: User, password: String): IO[Valid[Unit]] = for {
+    obj ← io {
+      collection.findOne(
+        byIdQuery(user), DBObject("salt" -> true)
+      ) flatMap (_.getAs[String]("salt"))
+    }
+    res ← obj.fold(
+      salt ⇒ updateIO(user)($set(
+        "password" -> hash(password, salt),
+        "sha512" -> false
+      )) map { _ ⇒ success(Unit): Valid[Unit] },
+      io(!!("No salt found"))
+    )
+  } yield res
 
   def updateIO(username: String)(op: User ⇒ DBObject): IO[Unit] = for {
     userOption ← byId(username)

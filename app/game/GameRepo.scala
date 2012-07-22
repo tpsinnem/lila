@@ -11,7 +11,7 @@ import user.User
 import com.novus.salat._
 import com.novus.salat.dao._
 import com.mongodb.casbah.MongoCollection
-import com.mongodb.casbah.Imports._
+import com.mongodb.casbah.query.Imports._
 import org.joda.time.DateTime
 import org.scala_tools.time.Imports._
 import java.util.Date
@@ -23,7 +23,7 @@ class GameRepo(collection: MongoCollection)
 
   def game(gameId: String): IO[Option[DbGame]] = io {
     if (gameId.size != gameIdSize) None
-    else findOneByID(gameId) flatMap (_.decode)
+    else findOneById(gameId) flatMap (_.decode)
   }
 
   def player(gameId: String, color: Color): IO[Option[DbPlayer]] =
@@ -111,11 +111,11 @@ class GameRepo(collection: MongoCollection)
   }
 
   def denormalizeStarted(game: DbGame): IO[Unit] = io {
-    update(idSelector(game), 
+    update(idSelector(game),
       $set("userIds" -> game.players.map(_.userId).flatten))
     update(idSelector(game), game.mode.rated.fold(
       $set("isRated" -> true), $unset("isRated")))
-    if (game.variant.exotic) update(idSelector(game), 
+    if (game.variant.exotic) update(idSelector(game),
       $set("initialFen" -> (Forsyth >> game.toChess)))
   }
 
@@ -155,6 +155,15 @@ class GameRepo(collection: MongoCollection)
     ).toList.map(_.decode).flatten
   }
 
+  def featuredCandidates: IO[List[DbGame]] = io {
+    find(Query.playable ++
+      Query.clock(true) ++
+      ("turns" $gt 1) ++
+      ("createdAt" $gt (DateTime.now - 4.minutes)) ++
+      ("updatedAt" $gt (DateTime.now - 15.seconds))
+    ).toList.map(_.decode).flatten
+  }
+
   def count(query: DBObject): IO[Int] = io {
     super.count(query).toInt
   }
@@ -173,6 +182,12 @@ class GameRepo(collection: MongoCollection)
   def games(ids: List[String]): IO[List[DbGame]] = io {
     find("_id" $in ids).toList.map(_.decode).flatten sortBy (_.id)
   }
+
+  def nbPerDay(days: Int): IO[List[Int]] = ((days to 1 by -1).toList map { day ⇒
+    val from = DateTime.now.withTimeAtStartOfDay - day.days
+    val to = from + 1.day
+    count(("createdAt" $gte from $lt to))
+  }).sequence 
 
   private def idSelector(game: DbGame): DBObject = idSelector(game.id)
   private def idSelector(id: String): DBObject = DBObject("_id" -> id)

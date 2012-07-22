@@ -25,6 +25,7 @@ final class Hand(
     moretimeSeconds: Int) extends Handler(gameRepo) {
 
   type IOValidEvents = IO[Valid[List[Event]]]
+  type PlayResult = Future[Valid[(List[Event], String)]]
 
   def play(
     povRef: PovRef,
@@ -32,38 +33,45 @@ final class Hand(
     destString: String,
     promString: Option[String] = None,
     blur: Boolean = false,
-    lag: Int = 0): IO[Valid[(List[Event], String)]] = fromPov(povRef) {
+    lag: Int = 0): PlayResult = fromPovFuture(povRef) {
     case Pov(g1, color) ⇒ (for {
-      g2 ← g1.validIf(g1.playable, "Game not playable")
+      g2 ← g1.validIf(g1 playableBy color, "Game not playable")
       orig ← posAt(origString) toValid "Wrong orig " + origString
       dest ← posAt(destString) toValid "Wrong dest " + destString
       promotion = Role promotable promString
       newChessGameAndMove ← g2.toChess(orig, dest, promotion, lag)
       (newChessGame, move) = newChessGameAndMove
-    } yield g2.update(newChessGame, move, blur)).fold(
-      e ⇒ io(failure(e)),
-      progress ⇒ for {
-        eventsAndBoard ← if (progress.game.finished) for {
-          _ ← gameRepo save progress
-          finishEvents ← finisher.moveFinish(progress.game, color)
-          events = progress.events ::: finishEvents
-          fen = fenBoard(progress)
-        } yield events -> fen
-        else if (progress.game.player.isAi && progress.game.playable) for {
-          aiResult ← ai()(progress.game) map (_.err)
-          (newChessGame, move) = aiResult
-          progress2 = progress flatMap { _.update(newChessGame, move) }
-          _ ← gameRepo save progress2
-          finishEvents ← finisher.moveFinish(progress2.game, !color)
-          events = progress2.events ::: finishEvents
-          fen = fenBoard(progress2)
-        } yield events -> fen
-        else for {
-          _ ← gameRepo save progress
-          events = progress.events 
-          fen = fenBoard(progress)
-        } yield events -> fen
-      } yield success(eventsAndBoard)
+    } yield g2.update(newChessGame, move, blur)).prefixFailuresWith(povRef + " - ").fold(
+      e ⇒ Future(failure(e)),
+      progress ⇒ if (progress.game.finished) (for {
+        _ ← gameRepo save progress
+        finishEvents ← finisher.moveFinish(progress.game, color)
+        events = progress.events ::: finishEvents
+        fen = fenBoard(progress)
+      } yield success(events -> fen)).toFuture
+      else if (progress.game.player.isAi && progress.game.playable) for {
+        initialFen ← progress.game.variant.standard.fold(
+          io(none[String]),
+          gameRepo initialFen progress.game.id).toFuture
+        aiResult ← ai().play(progress.game, initialFen)
+        eventsAndFen ← aiResult.fold(
+          err ⇒ Future(failure(err)), {
+            case (newChessGame, move) ⇒ (for {
+              progress2 ← io {
+                progress flatMap { _.update(newChessGame, move) }
+              }
+              _ ← gameRepo save progress2
+              finishEvents ← finisher.moveFinish(progress2.game, !color)
+              events = progress2.events ::: finishEvents
+              fen = fenBoard(progress2)
+            } yield success(events -> fen)).toFuture
+          }): PlayResult
+      } yield eventsAndFen
+      else (for {
+        _ ← gameRepo save progress
+        events = progress.events
+        fen = fenBoard(progress)
+      } yield success(events -> fen)).toFuture
     )
   }
 
@@ -74,13 +82,13 @@ final class Hand(
   def resignForce(fullId: String): IO[Valid[List[Event]]] =
     gameRepo pov fullId flatMap { povOption ⇒
       (povOption toValid "No such game" flatMap { pov ⇒
-        implicit val timeout = Timeout(100 millis)
+        implicit val timeout = Timeout(1 second)
         Await.result(
           hubMaster ? round.IsGone(pov.game.id, !pov.color) map {
             case true ⇒ finisher resignForce pov
             case _    ⇒ !!("Opponent is not gone")
           },
-          100 millis
+          1 second
         )
       }).fold(err ⇒ io(failure(err)), _ map success)
     }
@@ -241,6 +249,6 @@ final class Hand(
     } toValid "cannot add moretime"
   )
 
-  private def fenBoard(progress: Progress) = 
+  private def fenBoard(progress: Progress) =
     Forsyth exportBoard progress.game.toChess.board
 }

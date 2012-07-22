@@ -2,12 +2,19 @@ package lila
 package socket
 
 import play.api.libs.json.JsObject
+import scala.collection.mutable
 
 trait SocketMember {
   val channel: JsChannel
   val username: Option[String]
 
   lazy val userId: Option[String] = username map (_.toLowerCase)
+
+  val liveGames = mutable.Set[String]()
+
+  def addLiveGames(ids: List[String]) {
+    ids foreach liveGames.+=
+  }
 }
 case object Close
 case object GetUsernames
@@ -21,3 +28,5 @@ case class Quit(uid: String)
 case class SendTo(userId: String, message: JsObject)
 case class Fen(gameId: String, fen: String)
 case class LiveGames(uid: String, gameIds: List[String])
+case class ChangeFeatured(oldId: Option[String], newId: String)
+case class Resync(uid: String)

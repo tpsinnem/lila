@@ -23,7 +23,7 @@ $(function() {
       }
       function openSquare(x, y) {
         var scolor = (x+y)%2 ? 'white' : 'black';
-        var html = '<div class="lmcs '+scolor+'" style="top:'+(24*(8-x))+'px;left:'+(24*(y-1))+'px;"';
+        var html = '<div class="lmcs '+scolor+'" style="top:'+(28*(8-x))+'px;left:'+(28*(y-1))+'px;"';
         if (withKeys) {
           var key = 'white' == color 
             ? letters[y - 1] + x
@@ -63,7 +63,10 @@ $(function() {
   parseFen();
   $('body').on('lichess.content_loaded', parseFen);
 
+  var socketOpened = false;
+
   function registerLiveGames() {
+    if (!socketOpened) return;
     var ids = [];
     $('a.mini_board.live').each(function() {
       ids.push($(this).data("live"));
@@ -73,15 +76,15 @@ $(function() {
     }
   }
   $('body').on('lichess.content_loaded', registerLiveGames);
-  $('body').on('socket.open', registerLiveGames);
+  $('body').on('socket.open', function() {
+    socketOpened = true;
+    registerLiveGames();
+  });
 
   lichess.socketDefaults.events.fen = function(e) {
     $('a.live_' + e.id).each(function() {
       var $this = $(this);
-      parseFen($this.data("fen", e.fen).addClass("highlight"));
-      setTimeout(function() {
-        $this.removeClass("highlight");
-      }, 200);
+      parseFen($this.data("fen", e.fen));
     });
   };
 

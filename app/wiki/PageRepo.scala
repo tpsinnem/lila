@@ -11,10 +11,18 @@ final class PageRepo(
     collection: MongoCollection) extends SalatDAO[Page, String](collection) {
 
   def byId(id: String): IO[Option[Page]] = io {
-    findOneByID(id)
+    findOneById(id)
   }
 
   val all: IO[List[Page]] = io {
     find(DBObject()).sort(DBObject("name" -> 1)).toList
+  }
+
+  def saveIO(page: Page): IO[Unit] = io {
+    save(page)
+  }
+
+  val clear: IO[Unit] = io {
+    remove(DBObject())
   }
 }

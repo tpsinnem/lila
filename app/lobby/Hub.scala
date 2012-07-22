@@ -16,10 +16,8 @@ final class Hub(
 
     case PingVersion(uid, v) ⇒ {
       ping(uid)
-      member(uid) foreach { m ⇒
-        history.since(v).fold(
-          _ foreach m.channel.push
-          , resync(m))
+      withMember(uid) { m ⇒
+        history.since(v).fold(_ foreach m.channel.push, resync(m))
       }
     }
 
@@ -60,21 +58,30 @@ final class Hub(
     ) _ |> { fn ⇒
         members.values filter (_ ownsHook hook) foreach fn
       }
+
+    case ChangeFeatured(oldId, newId) ⇒ notifyFeatured(oldId, newId)
   }
 
-  private def notifyMember(t: String, data: JsValue)(member: Member) {
+  def notifyMember(t: String, data: JsValue)(member: Member) {
     val msg = JsObject(Seq("t" -> JsString(t), "d" -> data))
     member.channel push msg
   }
 
-  private def notifyVersion(t: String, data: JsValue) {
+  def notifyVersion(t: String, data: JsValue) {
     val vmsg = history += makeMessage(t, data)
     members.values.foreach(_.channel push vmsg)
   }
-  private def notifyVersion(t: String, data: Seq[(String, JsValue)]) {
+  def notifyVersion(t: String, data: Seq[(String, JsValue)]) {
     notifyVersion(t, JsObject(data))
   }
 
-  private def hookOwnerIds: Iterable[String] =
+  def notifyFeatured(oldId: Option[String], newId: String) {
+    val msg = makeMessage("featured", JsObject(Seq(
+      "oldId" -> oldId.fold(JsString(_), JsNull),
+      "newId" -> JsString(newId))))
+    members.values foreach (_.channel push msg)
+  }
+
+  def hookOwnerIds: Iterable[String] =
     members.values.map(_.hookOwnerId).flatten
 }

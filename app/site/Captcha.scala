@@ -3,7 +3,8 @@ package site
 
 import game._
 import chess.{ Game, Color }
-import chess.format.{ Forsyth, PgnReader }
+import chess.format.Forsyth
+import chess.format.pgn
 
 import scalaz.{ NonEmptyList, NonEmptyLists }
 import scala.collection.mutable
@@ -47,13 +48,15 @@ final class Captcha(gameRepo: GameRepo) {
   }
 
   private def createFromDb: Valid[Challenge] = {
-    //val gameOption = gameRepo.findRandomStandardCheckmate(100).unsafePerformIO
-    val gameOption = gameRepo.findRandomStandardCheckmate(1).unsafePerformIO
+    val gameOption = findCheckmateInDb(100) orElse findCheckmateInDb(1)
     for {
       game ← gameOption toValid "No checkmate available in db"
       challenge ← makeChallenge(game)
     } yield challenge
   }
+
+  private def findCheckmateInDb(distribution: Int) =
+    gameRepo.findRandomStandardCheckmate(distribution).unsafePerformIO 
 
   private def getFromDb(id: String): Valid[Challenge] = {
     val gameOption = (gameRepo game id).unsafePerformIO
@@ -79,7 +82,7 @@ final class Captcha(gameRepo: GameRepo) {
     } map (_.notation)
 
   private def rewind(game: DbGame): Valid[Game] =
-    PgnReader.withSans(game.pgn, _.init) map (_.game) mapFail failInfo(game)
+    pgn.Reader.withSans(game.pgn, _.init) map (_.game) mapFail failInfo(game)
 
   private def fen(game: Game): String = Forsyth >> game takeWhile (_ != ' ')
 

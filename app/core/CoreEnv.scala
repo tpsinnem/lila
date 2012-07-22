@@ -16,6 +16,8 @@ final class CoreEnv private (application: Application, val settings: Settings) {
   implicit val app = application
   import settings._
 
+  def configName = ConfigName
+
   lazy val mongodb = new lila.mongodb.MongoDbEnv(
     settings = settings)
 
@@ -51,6 +53,7 @@ final class CoreEnv private (application: Application, val settings: Settings) {
     mongodb = mongodb.apply _,
     userRepo = user.userRepo,
     getGame = game.gameRepo.game,
+    featured = game.featured,
     roundSocket = round.socket,
     roundMessenger = round.messenger,
     flood = security.flood)
@@ -94,7 +97,9 @@ final class CoreEnv private (application: Application, val settings: Settings) {
   lazy val analyse = new lila.analyse.AnalyseEnv(
     settings = settings,
     gameRepo = game.gameRepo,
-    userRepo = user.userRepo)
+    userRepo = user.userRepo,
+    mongodb = mongodb.apply _,
+    () ⇒ ai.ai().analyse _)
 
   lazy val bookmark = new lila.bookmark.BookmarkEnv(
     settings = settings,
@@ -116,15 +121,27 @@ final class CoreEnv private (application: Application, val settings: Settings) {
   lazy val metaHub = new lila.socket.MetaHub(
     List(site.hub, lobby.hub, round.hubMaster))
 
+  lazy val notificationApi = new lila.notification.Api(
+    metaHub = metaHub)
+
   lazy val monitor = new lila.monitor.MonitorEnv(
     app = app,
     mongodb = mongodb.connection,
     settings = settings)
 
-  lazy val titivate = new core.Titivate(
+  lazy val titivate = new lila.core.Titivate(
     gameRepo = game.gameRepo,
     finisher = round.finisher,
     bookmarkApi = bookmark.api)
+
+  lazy val mod = new lila.mod.ModEnv(
+    settings = settings,
+    userRepo = user.userRepo,
+    securityStore = security.store,
+    firewall = security.firewall,
+    eloUpdater = user.eloUpdater,
+    lobbyMessenger = lobby.messenger,
+    mongodb = mongodb.apply _)
 }
 
 object CoreEnv {

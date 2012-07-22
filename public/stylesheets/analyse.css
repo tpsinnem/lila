@@ -13,6 +13,7 @@ div.board_wrap {
 }
 div.moves_wrap {
   margin-left: 532px;
+  position: relative;
 }
 span.board_mark {
   position: absolute;
@@ -53,6 +54,10 @@ span.board_mark.horz {
 #GameBoard td.highlightBlackSquare img {
   background: url(../images/over5.png) no-repeat;
 }
+#GameBoard td img.bestmove {
+  background: url(../images/sover.png) no-repeat;
+  background-position: 0 -64px;
+}
 #GameBoard td img {
   width: 64px;
   height: 64px;
@@ -66,6 +71,7 @@ span.board_mark.horz {
   width: 100px;
   height: 2em;
 }
+
 #GameText {
   font-size: 1.4em;
   width: 220px;
@@ -98,4 +104,28 @@ span.board_mark.horz {
 }
 #GameText a.moveOn {
   background: #FFE73B;
+}
+#GameLastComment {
+  position: absolute;
+  top: 512px;
+  margin-top: 1em;
+  font-size: 1.4em;
+  width: 220px;
+}
+div.advice_summary {
+  position: absolute;
+  top: 740px;
+  width: 280px;
+}
+div.advice_summary div {
+  margin-bottom: 1em;
+}
+
+div.adv_chart {
+  margin-top: 10px;
+  height: 150px;
+  width: 512px;
+}
+div.adv_chart iframe {
+  height: 150px;
 }

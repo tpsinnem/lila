@@ -110,6 +110,8 @@ trait LilaController
 
   def IORedirect(op: IO[Call]) = Redirect(op.unsafePerformIO)
 
+  def IORedirectUrl(op: IO[String]) = Redirect(op.unsafePerformIO)
+
   def OptionOk[A, B](oa: Option[A])(op: A ⇒ B)(
     implicit writer: Writeable[B],
     ctype: ContentTypeOf[B],
@@ -148,7 +150,7 @@ trait LilaController
   def IOptionResult[A](ioa: IO[Option[A]])(op: A ⇒ Result)(implicit ctx: Context) =
     ioa.unsafePerformIO.fold(a ⇒ op(a), notFound(ctx))
 
-  def notFound(ctx: Context) = Lobby handleNotFound ctx
+  def notFound(implicit ctx: Context) = Lobby handleNotFound ctx
 
   def todo = Open { implicit ctx ⇒
     NotImplemented(views.html.site.todo())

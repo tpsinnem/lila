@@ -4,6 +4,7 @@ package round
 import socket._
 import chess.{ Color, White, Black }
 import game.PovRef
+import user.User
 
 import akka.actor._
 import akka.util.duration._
@@ -34,7 +35,7 @@ final class Hub(
         if (playerIsGone(o.color)) notifyGone(o.color, false)
         playerTime(o.color, lastPingTime)
       }
-      member(uid) foreach { m ⇒
+      withMember(uid) { m ⇒
         history.since(v).fold(batch(m, _), resync(m))
       }
     }
@@ -55,9 +56,9 @@ final class Hub(
 
     case IsGone(_, color)            ⇒ sender ! playerIsGone(color)
 
-    case Join(uid, username, version, color, owner) ⇒ {
+    case Join(uid, user, version, color, owner) ⇒ {
       val (enumerator, channel) = Concurrent.broadcast[JsValue]
-      val member = Member(channel, username, PovRef(gameId, color), owner)
+      val member = Member(channel, user, PovRef(gameId, color), owner)
       addMember(uid, member)
       notify(crowdEvent :: Nil)
       if (playerIsGone(color)) notifyGone(color, false)
@@ -69,6 +70,10 @@ final class Hub(
     case Events(events)        ⇒ notify(events)
     case GameEvents(_, Nil)    ⇒
     case GameEvents(_, events) ⇒ notify(events)
+
+    case msg @ AnalysisAvailable(_) ⇒ {
+      notifyAll("analysisAvailable", JsNull)
+    }
 
     case Quit(uid) ⇒ {
       quit(uid)
@@ -104,10 +109,7 @@ final class Hub(
 
   def batch(member: Member, vevents: List[VersionedEvent]) {
     if (vevents.nonEmpty) {
-      member.channel push JsObject(Seq(
-        "t" -> JsString("batch"),
-        "d" -> JsArray(vevents map (_ jsFor member))
-      ))
+      member.channel push makeEvent("batch", JsArray(vevents map (_ jsFor member)))
     }
   }
 
@@ -128,7 +130,7 @@ final class Hub(
     members.values find { m ⇒ m.owner && m.color == color }
 
   def ownerOf(uid: String): Option[Member] =
-    member(uid) filter (_.owner)
+    members get uid filter (_.owner)
 
   def playerTime(color: Color): Double = color.fold(
     whiteTime,

@@ -1,7 +1,8 @@
 div.lichess_board_wrap {
   float: left;
-  border: 1px solid #D3D3D3;
+  border: 1px solid #ccc;
   position: relative;
+  border-radius: 5px;
 }
 span.board_mark {
   position: absolute;
@@ -21,6 +22,7 @@ div.lichess_board {
   width: 512px;
   height: 512px;
   position: relative;
+  border-radius: 5px;
 }
 
 div.lcs {
@@ -30,15 +32,15 @@ div.lcs {
 }
 
 /* generated - don't modify */
-body.blue #GameBoard td.whiteSquare, body.blue #GameBoard td.highlightWhiteSquare, body.blue div.lcs.white, #top div.lcs.white.blue { background: #dee3e6; }
+body.blue #GameBoard td.whiteSquare, body.blue #GameBoard td.highlightWhiteSquare, body.blue div.lcs.white, #top div.lcs.white.blue, body.blue div.lichess_board { background: #dee3e6; }
 body.blue #GameBoard td.blackSquare, body.blue #GameBoard td.highlightBlackSquare, body.blue div.lcs.black, #top div.lcs.black.blue, body.blue span.theme_demo { background: #8ca2ad; }
-body.brown #GameBoard td.whiteSquare, body.brown #GameBoard td.highlightWhiteSquare, body.brown div.lcs.white, #top div.lcs.white.brown { background: #f0d9b5; }
+body.brown #GameBoard td.whiteSquare, body.brown #GameBoard td.highlightWhiteSquare, body.brown div.lcs.white, #top div.lcs.white.brown, body.brown div.lichess_board { background: #f0d9b5; }
 body.brown #GameBoard td.blackSquare, body.brown #GameBoard td.highlightBlackSquare, body.brown div.lcs.black, #top div.lcs.black.brown, body.brown span.theme_demo { background: #b58863; }
-body.green #GameBoard td.whiteSquare, body.green #GameBoard td.highlightWhiteSquare, body.green div.lcs.white, #top div.lcs.white.green { background: #ffffdd; }
+body.green #GameBoard td.whiteSquare, body.green #GameBoard td.highlightWhiteSquare, body.green div.lcs.white, #top div.lcs.white.green, body.green div.lichess_board { background: #ffffdd; }
 body.green #GameBoard td.blackSquare, body.green #GameBoard td.highlightBlackSquare, body.green div.lcs.black, #top div.lcs.black.green, body.green span.theme_demo { background: #86a666; }
-body.grey #GameBoard td.whiteSquare, body.grey #GameBoard td.highlightWhiteSquare, body.grey div.lcs.white, #top div.lcs.white.grey { background: #fff; }
+body.grey #GameBoard td.whiteSquare, body.grey #GameBoard td.highlightWhiteSquare, body.grey div.lcs.white, #top div.lcs.white.grey, body.grey div.lichess_board { background: #fff; }
 body.grey #GameBoard td.blackSquare, body.grey #GameBoard td.highlightBlackSquare, body.grey div.lcs.black, #top div.lcs.black.grey, body.grey span.theme_demo { background: #c4c4c4; }
-body.wood #GameBoard td.whiteSquare, body.wood #GameBoard td.highlightWhiteSquare, body.wood div.lcs.white, #top div.lcs.white.wood { background: url(../images/woodenboard_white.jpg) no-repeat; }
+body.wood #GameBoard td.whiteSquare, body.wood #GameBoard td.highlightWhiteSquare, body.wood div.lcs.white, #top div.lcs.white.wood, body.wood div.lichess_board { background: url(../images/woodenboard_white.jpg) no-repeat; }
 body.wood #GameBoard td.blackSquare, body.wood #GameBoard td.highlightBlackSquare, body.wood div.lcs.black, #top div.lcs.black.wood, body.wood span.theme_demo { background: url(../images/woodenboard_black.jpg) no-repeat; }
 body.wood #GameBoard #tcol0trow0, body.wood #a8 { background-position: 0px 0px; }
 body.wood #GameBoard #tcol1trow0, body.wood #b8 { background-position: -64px 0px; }
@@ -231,13 +233,11 @@ div.lichess_overboard p.explanations {
 
 #connection_lost {
   display: none;
-  top: 217px;
+  top: 224px;
   left: 146px;
   width: 220px;
   padding: 10px 0 0 0;
   font-weight: bold;
-  color: #666;
-  opacity: 0.7;
   box-shadow: 0px 0px 20px #d85000;
 }
 
@@ -297,11 +297,6 @@ div.lichess_promotion_choice div.lichess_piece {
 
 div.lichess_promotion_choice div.lichess_piece:hover {
   box-shadow:0 0 10px blue;
-}
-
-div.lichess_board_wrap {
-  border: 1px solid #ccc;
-  border-radius: 5px;
 }
 
 div.lichess_player_white #a8,
@@ -424,6 +419,10 @@ div.lichess_table_wrap a.moretime {
 }
 div.lichess_table_wrap a.moretime:hover {
   opacity: 1;
+}
+
+div.lichess_table_wrap .player_blurs {
+  margin-top: 1em;
 }
 
 div.lichess_table_next {
@@ -573,7 +572,8 @@ div.lichess_cemetery div.lichess_piece {
 }
 
 div.under_chat {
-  width: 200px;
+  width: 224px;
+  margin-left: -28px;
   position: absolute;
   top: 530px;
   left: 0;
@@ -585,6 +585,9 @@ div.lichess_chat {
   top: 205px;
   left: -30px;
   border-radius: 4px;
+}
+div.lichess_chat.small_chat {
+  left: 0px;
 }
 div.lichess_chat.lobby_chat {
   top: 126px;
@@ -622,6 +625,9 @@ div.lichess_chat ol {
   position:relative;
   overflow:hidden;
 }
+div.lichess_chat.small_chat ol {
+  width: 186px;
+}
 div.lichess_chat.lobby_chat ol {
   height: 341px;
 }
@@ -635,6 +641,9 @@ div.lichess_chat form input {
   padding: 2px 20px 2px 4px;
   border-radius: 0 0 4px 4px;
   width: 202px;
+}
+div.lichess_chat.small_chat form input {
+  width: 172px;
 }
 div.lichess_chat input.lichess_hint {
   color: #888;
@@ -662,10 +671,10 @@ div.lichess_chat ol.lichess_messages li {
   line-height: 14px;
 }
 div.anon_chat ol.lichess_messages li {
-  padding-left: 4px;
+  padding-left: 3px;
 }
 div.anon_chat span.title {
-  padding-left: 4px;
+  padding-left: 3px;
 }
 div.anon_chat li span {
   font-weight: bold;
@@ -682,36 +691,25 @@ div.anon_chat a.user_link:hover {
   text-decoration: underline;
 }
 
-div.lichess_chat input.toggle_chat {
-  cursor: pointer;
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  z-index:1;
-}
-
 div.lichess_chat ol.lichess_messages li.white {
-  background: url(../images/kw14.png) no-repeat;
+  background: url(../images/klw14.png) no-repeat;
 }
 div.lichess_chat ol.lichess_messages li.black {
-  background: url(../images/kb14.png) no-repeat;
-}
-div.lichess_chat ol.lichess_messages li.system {
-  background: url(../images/system.png) no-repeat;
+  background: url(../images/klb14.png) no-repeat;
 }
 div.lichess_chat.hidden ol.lichess_messages, div.lichess_chat.hidden form {
   opacity: 0;
 }
 
-div.watchers span.list {
+div.inline_userlist span.list {
   display: inline;
   color: #9a9a9a;
 }
-div.watchers a {
+div.inline_userlist a {
   color: #aaa;
   text-decoration: none;
   font-weight: bold;
 }
-div.watchers a:hover {
+div.inline_userlist a:hover {
   text-decoration: underline;
 }

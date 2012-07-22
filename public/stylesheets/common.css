@@ -126,7 +126,7 @@ div.content_box {
   border: 1px solid #ccc;
   border-radius: 5px;
   background: #fff;
-  padding: 20px 25px 25px 25px;
+  padding: 20px 24px 24px 24px;
   text-align: left;
 }
 div.content_box h1 {
@@ -136,7 +136,7 @@ div.content_box h1 {
   display: inline;
 }
 div.content_box.small_box {
-  width: 500px;
+  width: 530px;
 }
 div.content_box.no_padding {
   padding: 0;
@@ -193,6 +193,13 @@ div.content_box .lichess_title {
   font-size: 2em;
   display: block;
   margin-bottom: 0.5em;
+}
+
+div.content_box table.datatable td {
+  padding: 5px 10px 5px 10px;
+}
+div.content_box table.datatable tr:nth-child(odd) {
+  background: #f7f7f7;
 }
 
 div.lichess_goodies div.box {
@@ -270,17 +277,6 @@ a.goto_nav:hover, #top a.toggle:hover, #top a.bgpicker:hover, a#sound_state:hove
   float: right;
   position: relative;
 }
-#top div.auth form,
-#top div.auth .links {
-  display: none;
-  position: absolute;
-  right: -1px;
-  top: 24px;
-  background: #fff;
-  border: 1px solid #dadada;
-  border-top: none;
-  z-index: 1;
-}
 #top div.auth.shown form,
 #top div.auth.shown .links {
   display: block;
@@ -327,6 +323,16 @@ a.goto_nav:hover, #top a.toggle:hover, #top a.bgpicker:hover, a#sound_state:hove
   padding-left: 0;
   padding-right: 20px;
 }
+#top .dropdown {
+  display: none;
+  position: absolute;
+  right: -1px;
+  top: 24px;
+  background: #fff;
+  border: 1px solid #dadada;
+  border-top: none;
+  z-index: 1;
+}
 div.auth input.username, div.auth input.password {
   border: 1px solid #dadada;
   padding: 2px 3px;
@@ -340,33 +346,25 @@ div.lichess_language {
   float: right;
   position: relative;
 }
-ul.lichess_language_links {
-  display: none;
-  position: absolute;
-  right: -1px;
-  top: 24px;
-  background: #fff;
-  border: 1px solid #dadada;
-  border-top: none;
+ul.language_links {
   width: 183px;
   max-height: 600px;
   overflow:auto;
-  z-index: 1;
 }
-div.lichess_language.shown ul.lichess_language_links {
+#top div.lichess_language.shown ul.language_links {
   display: block;
 }
-ul.lichess_language_links a {
+ul.language_links a {
   display: block;
   padding: 0.4em 0.5em;
   text-decoration: none;
   text-transform: capitalize;
 }
-ul.lichess_language_links a:hover {
+ul.language_links a:hover {
   background: #F0F0F0;
   color: #444;
 }
-ul.lichess_language_links li:last-child {
+ul.language_links li:last-child {
   border-top: 1px solid #ddd;
 }
 
@@ -381,16 +379,6 @@ ul.lichess_language_links li:last-child {
   padding: 1px 5px;
   text-decoration: none;
   line-height: normal;
-}
-#top div.themepicker div.themes {
-  display: none;
-  position: absolute;
-  right: -1px;
-  top: 24px;
-  background: #fff;
-  border: 1px solid #dadada;
-  border-top: none;
-  z-index: 1;
 }
 #top div.themepicker.shown div.themes {
   display: block;
@@ -547,7 +535,16 @@ div.lichess_social div.addtochrome {
 }
 
 /* soft inactive gradient */
-#top, div.lichess_chat_top, div.undertable_top, .button, .button:visited, .ui-state-default, div.content_box_top, div.hooks tr, a.translation_call {
+#top,
+div.lichess_chat_top,
+div.undertable_top,
+.button,
+.button:visited,
+.ui-state-default,
+div.content_box_top,
+div.hooks tr,
+a.translation_call,
+div.locale_menu a {
   color: #666;
   background: #fafafa;
   background: -moz-linear-gradient(center top , #fafafa, #e0e0e0) repeat scroll 0 0 #fafafa;
@@ -559,7 +556,18 @@ div.lichess_social div.addtochrome {
 }
 
 /* active gradient */
-#top a.goto_nav.active, .button.active, .button.active:hover, .ui-state-active, .ui-widget-header, div.pagination span.current, a.goto_nav span.new_messages.unread, div.hooks td.action:hover, div.hooks table.empty_table tr:hover, div.progressbar.flashy div {
+#top a.goto_nav.active,
+.button.active,
+.button.active:hover,
+.ui-state-active,
+.ui-widget-header,
+div.pagination span.current,
+#top span.new_messages.unread,
+div.hooks td.action:hover,
+div.hooks table.empty_table tr:hover,
+div.progressbar.flashy div,
+div.locale_menu a.active
+{
   color: #fff;
   background: #d85000;
   background: -moz-linear-gradient(center top , #f49c00, #d85000) repeat scroll 0 0 #d85000;
@@ -572,7 +580,8 @@ div.lichess_social div.addtochrome {
 
 /* strong inactive gradient */
 div.hooks td.action,
-.button:hover
+.button:hover,
+div.notification
 {
   background: #ffffff;
   background: -moz-linear-gradient(center top , #ffffff, #c0c0c0) repeat scroll 0 0 #ffffff;
@@ -606,7 +615,7 @@ div.content_box
 
 div.checkmateFen {
   float: left;
-  width: 220px;
+  width: 250px;
   margin-left: 110px;
   cursor: pointer;
 }
@@ -624,20 +633,35 @@ div.checkmateCaptcha input {
   width: 5em;
 }
 
-div.game_more {
-  margin-top: 20px;
+div.undergame_box {
+  margin-top: 10px;
   width: 512px;
   box-shadow: 0 0 7px #d0d0d0;
   border: 1px solid #ccc;
   border-radius: 5px;
   line-height: 24px;
 }
-div.game_more a {
+div.undergame_box a {
   text-decoration: none;
 }
-div.game_more a:hover {
+div.undergame_box a:hover {
   text-decoration: underline;
 }
+div.undergame_box div.inner {
+  padding: 10px;
+}
+
+div.game_analysis {
+  padding: 10px;
+  width: 492px;
+}
+div.game_analysis a {
+  background: url("../images/s24.png") no-repeat 0 -72px;
+  display: block;
+  height: 24px;
+  padding-left: 30px;
+}
+
 div.game_more div.more_top {
   padding: 3px 10px;
   width: 492px;
@@ -665,19 +689,12 @@ div.game_more textarea {
   border-radius: 3px;
 }
 div.game_extra {
-  padding: 10px 10px;
-  width: 492px;
   border-top: 1px solid #ccc;
-}
-div.game_extra div.body {
-  width: 60%;
 }
 
 div.game_extra div.bookmarkers {
   float: right;
-}
-div.game_extra div.bookmarkers li {
-  margin-top: 5px;
+  max-width: 48%;
 }
 
 span.bookmark {
@@ -707,7 +724,7 @@ span.bookmark a {
 div.progressbar {
   background: #eaeaea;
   border: 1px solid #e0e0e0;
-  border-radius: 5px; 
+  border-radius: 5px;
   padding: 1px;
 }
 
@@ -718,4 +735,24 @@ div.progressbar div {
 }
 div.progressbar.flashy.green div {
   background: #90d050;
+}
+
+div.notifications {
+  width: 1005px;
+  margin: 0 auto -10px auto;
+}
+div.notification {
+  margin-left: 211px;
+  width: 498px;
+  border: 1px solid #404040;
+  padding: 6px 8px 7px 8px;
+  margin-bottom: 8px;
+  border-radius: 3px;
+}
+div.notification a.close {
+  text-decoration: none;
+  float: right;
+}
+div.notification a.close:hover {
+  font-weight: bold;
 }

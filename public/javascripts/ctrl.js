@@ -16,8 +16,17 @@ var lichess = {
         }
       },
       nbm: function(e) {
-        var $tag = $('#nb_messages');
-        $tag.text(e).toggleClass("unread", e > 0);
+        $('#nb_messages').text(e || "0").toggleClass("unread", e > 0);
+      },
+      notificationAdd: function(html) {
+        $('div.notifications ').prepend(html);
+      },
+      notificationRemove: function(id) {
+        $('#' + id).remove();
+      },
+      analysisAvailable: function() {
+        $("div.game_analysis.status").remove();
+        $("div.game_analysis").show();
       }
     },
     options: {
@@ -54,7 +63,7 @@ $(function() {
     if (lichess.socket == null && $('div.server_error_box').length == 0) {
       lichess.socket = new $.websocket(lichess.socketUrl + "/socket", 0, lichess.socketDefaults);
     }
-  }, 2000);
+  }, 1000);
 
   $('input.lichess_id_input').select();
 
@@ -132,8 +141,8 @@ $(function() {
       itemSelector: ".infinitescroll .paginated_element",
       loading: {
         msgText: "",
-        img: "/assets/images/hloader.gif",
-        finishedMsg: "---"
+      img: "/assets/images/hloader3.gif",
+      finishedMsg: "---"
       }
     }, function() {
       $("#infscr-loading").remove();
@@ -175,6 +184,15 @@ $(function() {
   $('input.confirm').click(function() {
     return confirm('Confirm this action?');
   });
+  $('a.ipban').one("click", function() {
+    var $a = $(this);
+    if (confirm($a.text() + "?")) {
+      $.post($a.attr('href'), function() {
+        $a.text('Done').attr('href', '#');
+      });
+    }
+    return false;
+  });
 
   function bookmarks() {
     $('span.bookmark a.icon:not(.jsed)').each(function() {
@@ -191,6 +209,10 @@ $(function() {
   bookmarks();
   $('body').on('lichess.content_loaded', bookmarks);
 
+  if ($(window).width() < 1060) {
+    $("div.lichess_chat").addClass("small_chat");
+  }
+
   $("a.view_pgn_toggle").one("click", function() {
     var $this = $(this).text("...");
     $.ajax({
@@ -200,6 +222,24 @@ $(function() {
       }
     });
     return false;
+  });
+
+  $("div.notifications").on("click", "div.notification a", function(e) {
+    var $a = $(this);
+    var $notif = $a.closest("div.notification");
+    var follow = !$a.hasClass("close");
+    $.ajax($notif.find("a.close").attr("href"), {
+      type: "delete",
+      success: function() {
+        if (follow) location.href = $a.attr("href");
+      }
+    });
+    $notif.remove();
+    return false;
+  });
+
+  $("form.request_analysis a").click(function() {
+    $(this).parent().submit();
   });
 
   var elem = document.createElement('audio');

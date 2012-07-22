@@ -11,7 +11,9 @@ object ForumPost extends LilaController with forum.Controller {
   def forms = env.forum.forms
 
   val recent = Open { implicit ctx ⇒
-    Ok(html.forum.post.recent(env.forum.recent(ctx.me)))
+    IOk(env.forum.recent(ctx.me) map { posts =>
+      html.forum.post.recent(posts)
+    })
   }
 
   def create(categSlug: String, slug: String, page: Int) = OpenBody { implicit ctx ⇒
@@ -22,7 +24,7 @@ object ForumPost extends LilaController with forum.Controller {
           err ⇒ BadRequest(html.forum.topic.show(
             categ, topic, posts, Some(err -> forms.captchaCreate))),
           data ⇒ Firewall {
-            val post = postApi.makePost(categ, topic, data, ctx.me).unsafePerformIO
+            val post = postApi.makePost(categ, topic, data).unsafePerformIO
             Redirect("%s#%d".format(
             routes.ForumTopic.show(
               categ.slug,
