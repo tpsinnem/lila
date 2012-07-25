@@ -45,6 +45,10 @@ final class PgnDump(
     "AI level " + _,
     u.fold(_.username, "Anonymous"))
 
+  private def timeControl(clock: Option[Clock]) = clock.fold(
+    "" + _.limit + (_.increment > 0).fold("+" + _.increment, ""),
+    "-")
+
   private def tags(game: DbGame): IO[List[Tag]] = for {
     whiteUser ← user(game.whitePlayer)
     blackUser ← user(game.blackPlayer)
@@ -55,6 +59,7 @@ final class PgnDump(
     Tag(_.Date, game.createdAt.fold(dateFormat.print, "?")),
     Tag(_.White, player(game.whitePlayer, whiteUser)),
     Tag(_.Black, player(game.blackPlayer, blackUser)),
+    Tag(_.TimeControl, timeControl(game.clock)),
     Tag(_.Result, result(game)),
     Tag("WhiteElo", elo(game.whitePlayer)),
     Tag("BlackElo", elo(game.blackPlayer)),
@@ -65,13 +70,16 @@ final class PgnDump(
       Tag("SetUp", "1")
     ))
 
-  private def turns(game: DbGame): List[pgn.Turn] =
-    (game.pgnList grouped 2).zipWithIndex.toList map {
+  private def turns(game: DbGame): List[pgn.Turn] = {
+    (game.pgnList.zipWith(
+      game.timesLeft(white).zipWith(game.timesLeft(black))
+    ) grouped 2).zipWithIndex.toList map {
       case (moves, index) ⇒ pgn.Turn(
         number = index + 1,
-        white = moves.headOption map { pgn.Move(_) },
-        black = moves.tail.headOption map { pgn.Move(_) })
+        white = moves.headOption map { (move,time) => pgn.Move(move,time) },
+        black = moves.tail.headOption map { (move,time) => pgn.Move(move,time) })
     }
+  }
 }
 
 object PgnDump {

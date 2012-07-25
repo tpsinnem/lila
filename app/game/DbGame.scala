@@ -8,7 +8,6 @@ import Color._
 import chess.format.{ pgn => chessPgn }
 import chess.Pos.piotr
 import chess.Role.forsyth
-
 import org.joda.time.DateTime
 import org.scala_tools.time.Imports._
 import com.novus.salat.annotations.Key
@@ -302,6 +301,11 @@ case class DbGame(
     c ⇒ c.limit + 30 * c.increment,
     1200 // default to 20 minutes
   )
+
+  def timesLeft(color: Color) = hasClock.fold(
+    Some(player(color).moveTimeList.scanLeft(
+      clock.limit, _ + clock.increment - _)),
+    None)
 
   def creator = player(creatorColor)
 
