@@ -70,16 +70,26 @@ final class PgnDump(
       Tag("SetUp", "1")
     ))
 
-  private def turns(game: DbGame): List[pgn.Turn] = {
+  private def turns(game: DbGame): List[pgn.Turn] = game.hasClock.fold(
     (game.pgnList.zipWith(
       game.timesLeft(white).zipWith(game.timesLeft(black))
     ) grouped 2).zipWithIndex.toList map {
       case (moves, index) ⇒ pgn.Turn(
         number = index + 1,
-        white = moves.headOption map { (move,time) => pgn.Move(move,time) },
-        black = moves.tail.headOption map { (move,time) => pgn.Move(move,time) })
-    }
-  }
+        white = moves.headOption map { 
+          (move,timeLeft) => pgn.Move(san=move,timeLeft=timeLeft)
+        },
+        black = moves.tail.headOption map {
+          (move,timeLeft) => pgn.Move(san=move,timeLeft=timeLeft)
+        })
+    },
+    (game.pgnList grouped 2).zipWithIndex.toList map {
+      case (moves, index) ⇒ pgn.Turn(
+        number = index + 1,
+        white = moves.headOption map { pgn.Move(_) },
+        black = moves.tail.headOption map { pgn.Move(_) })
+    })
+
 }
 
 object PgnDump {
