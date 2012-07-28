@@ -4,6 +4,7 @@ package analyse
 import chess.format.Forsyth
 import chess.format.pgn
 import chess.format.pgn.{ Pgn, Tag }
+import chess.Clock
 import game.{ DbGame, DbPlayer, GameRepo }
 import user.{ User, UserRepo }
 
@@ -45,9 +46,11 @@ final class PgnDump(
     "AI level " + _,
     u.fold(_.username, "Anonymous"))
 
-  private def timeControl(clock: Option[Clock]) = clock.fold(
-    "" + _.limit + (_.increment > 0).fold("+" + _.increment, ""),
-    "-")
+  private def timeControl(clockOpt: Option[Clock]) = clockOpt.fold(
+    clock => "" + clock.limit + 
+      (clock.increment > 0).fold("+" + clock.increment, ""),
+    "-"
+  )
 
   private def tags(game: DbGame): IO[List[Tag]] = for {
     whiteUser ← user(game.whitePlayer)
@@ -71,8 +74,8 @@ final class PgnDump(
     ))
 
   private def turns(game: DbGame): List[pgn.Turn] = game.hasClock.fold(
-    (game.pgnList.zipWith(
-      game.timesLeft(white).zipWith(game.timesLeft(black))
+    (game.pgnList.zip(
+      game.timesLeft(white).zip(game.timesLeft(black)).flatten
     ) grouped 2).zipWithIndex.toList map {
       case (moves, index) ⇒ pgn.Turn(
         number = index + 1,

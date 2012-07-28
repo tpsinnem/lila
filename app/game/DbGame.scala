@@ -304,7 +304,7 @@ case class DbGame(
 
   def timesLeft(color: Color) = hasClock.fold(
     Some(player(color).moveTimeList.scanLeft(
-      clock.limit, _ + clock.increment - _)),
+      clock.limit, _ + clock.increment - _).tail),
     None)
 
   def creator = player(creatorColor)
