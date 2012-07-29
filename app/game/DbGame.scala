@@ -302,10 +302,10 @@ case class DbGame(
     1200 // default to 20 minutes
   )
 
-  def timesLeft(color: Color) = hasClock.fold(
-    Some(player(color).moveTimeList.scanLeft(
-      clock.limit, _ + clock.increment - _).tail),
-    None)
+  def timesLeft(color: Color):Option[List[Int]] = clock.map(
+    clockVal => player(color).moveTimeList.scanLeft(
+      clockVal.limit)( _ + clockVal.increment - _).tail
+  )
 
   def creator = player(creatorColor)
 

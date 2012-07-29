@@ -5,6 +5,7 @@ import chess.format.Forsyth
 import chess.format.pgn
 import chess.format.pgn.{ Pgn, Tag }
 import chess.Clock
+import chess.Color
 import game.{ DbGame, DbPlayer, GameRepo }
 import user.{ User, UserRepo }
 
@@ -73,26 +74,26 @@ final class PgnDump(
       Tag("SetUp", "1")
     ))
 
-  private def turns(game: DbGame): List[pgn.Turn] = game.hasClock.fold(
-    (game.pgnList.zip(
-      game.timesLeft(white).zip(game.timesLeft(black)).flatten
-    ) grouped 2).zipWithIndex.toList map {
+  private def turns(game: DbGame): List[pgn.Turn] = {
+
+    def allTimes = game.timesLeft(Color.White).flatten.zip(
+      game.timesLeft(Color.Black).flatten
+    ).flatMap{case (wTime, bTime) => List(Some(wTime), Some(bTime))} // Option[List[Int]]??
+
+    def allMovesWithTimes = game.pgnList.zipAll(allTimes, "NOT_USED", None)
+
+    allMovesWithTimes.grouped(2).zipWithIndex.toList.map {
       case (moves, index) ⇒ pgn.Turn(
         number = index + 1,
         white = moves.headOption map { 
-          (move,timeLeft) => pgn.Move(san=move,timeLeft=timeLeft)
+          case (move,time) => pgn.Move(san=move,timeLeft=time)
         },
-        black = moves.tail.headOption map {
-          (move,timeLeft) => pgn.Move(san=move,timeLeft=timeLeft)
-        })
-    },
-    (game.pgnList grouped 2).zipWithIndex.toList map {
-      case (moves, index) ⇒ pgn.Turn(
-        number = index + 1,
-        white = moves.headOption map { pgn.Move(_) },
-        black = moves.tail.headOption map { pgn.Move(_) })
-    })
-
+        black = moves.lastOption map {
+          case (move,time) => pgn.Move(san=move,timeLeft=time)
+        }
+      )
+    }
+  }
 }
 
 object PgnDump {

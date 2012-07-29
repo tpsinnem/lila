@@ -2,6 +2,7 @@ $(function() {
   SetImagePath("/assets/vendor/pgn4web/lichess/64"); // use "" path if images are in the same folder as this javascript file
   SetImageType("png");
   SetShortcutKeysEnabled(false);
+  SetLiveBroadcast(1, false, false, false);
   clearShortcutSquares("BCDEFGH", "12345678");
   clearShortcutSquares("A", "1234567");
   var $game = $("#GameBoard");
