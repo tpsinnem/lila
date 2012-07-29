@@ -303,7 +303,7 @@ case class DbGame(
   )
 
   def timesLeft(color: Color):Option[List[Int]] = {
-    def prependZeroForWhite = {list:List[Int] => (color == White).fold(0::list, list)}
+    def prependZeroForWhite = { list:List[Int] => (color == White).fold(0::list, list) }
     clock.map(
       clockVal => prependZeroForWhite(player(color).moveTimeList).
         scanLeft(clockVal.limit)( _ + clockVal.increment - _).tail
