@@ -53,6 +53,11 @@ final class PgnDump(
     "-"
   )
 
+  private def initialTime(clockOpt: Option[Clock]) = clockOpt.fold(
+    clock => Clock.timeString(clock.limit),
+    "--:--:--"
+  )
+
   private def tags(game: DbGame): IO[List[Tag]] = for {
     whiteUser ← user(game.whitePlayer)
     blackUser ← user(game.blackPlayer)
@@ -64,6 +69,8 @@ final class PgnDump(
     Tag(_.White, player(game.whitePlayer, whiteUser)),
     Tag(_.Black, player(game.blackPlayer, blackUser)),
     Tag(_.TimeControl, timeControl(game.clock)),
+    Tag(_.WhiteClock, initialTime(game.clock)),
+    Tag(_.BlackClock, initialTime(game.clock)),
     Tag(_.Result, result(game)),
     Tag("WhiteElo", elo(game.whitePlayer)),
     Tag("BlackElo", elo(game.blackPlayer)),
