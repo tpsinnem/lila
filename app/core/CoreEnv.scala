@@ -24,7 +24,8 @@ final class CoreEnv private (application: Application, val settings: Settings) {
   lazy val i18n = new lila.i18n.I18nEnv(
     app = app,
     mongodb = mongodb.apply _,
-    settings = settings)
+    settings = settings,
+    captcha = site.captcha)
 
   lazy val user = new lila.user.UserEnv(
     settings = settings,
@@ -35,7 +36,8 @@ final class CoreEnv private (application: Application, val settings: Settings) {
     settings = settings,
     captcha = site.captcha,
     mongodb = mongodb.apply _,
-    userRepo = user.userRepo)
+    userRepo = user.userRepo,
+    modLog = mod.logApi)
 
   lazy val message = new lila.message.MessageEnv(
     settings = settings,
